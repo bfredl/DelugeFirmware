@@ -87,4 +87,6 @@ protected:
 };
 extern LoadFirmwareUI loadFirmwareUI;
 
+void LoadImage(const char *path);
+
 #endif // LOADSONGUI_H

@@ -2155,7 +2155,8 @@ public:
 #else
 #endif
 	void beginSession(MenuItem* navigatedBackwardFrom) {
-		openUI(&loadFirmwareUI);
+		// openUI(&loadFirmwareUI);
+    LoadImage("IMAGES/chain.bin");
 	}
 } firmwareLoadMenu;
 

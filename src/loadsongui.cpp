@@ -924,3 +924,30 @@ void LoadFirmwareUI::performLoad() {
 		    	if (error) return;
     	numericDriver.displayPopup(filePath.get());
 }
+
+void LoadImage(const char *path) {
+  FILINFO fno;
+
+			int result = f_stat(path, &fno);
+      FSIZE_t fileSize = fno.fsize;
+
+			FIL currentFile;
+			// Open the file
+			result = f_open(&currentFile, path, FA_READ);
+			if (result != FR_OK) {
+    	numericDriver.displayPopup(HAVE_OLED ? "FAILE" : "NONE");
+      return;
+			}
+
+			UINT numBytesRead;
+			uint8_t* buffer = (uint8_t*)generalMemoryAllocator.alloc(fileSize, NULL, false, true);
+			result = f_read(&currentFile, buffer, fileSize, &numBytesRead);
+			if (!buffer) {
+        numericDriver.displayPopup("FETING");
+        return;
+      }
+    char buf[13];
+    buf[0] = 'L';
+    intToString(fileSize, buf+1, 1);
+    numericDriver.displayPopup(buf);
+}
