@@ -2132,8 +2132,7 @@ public:
     char buffer[13];
     buffer[0] = 'Q';
     // THE value was: Q 537267648
-    intToString((int)&EXEC_BASE, buffer+1, 1);
-		OLED::drawStringCentredShrinkIfNecessary(buffer, 22, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, 11, 13);
+		OLED::drawStringCentredShrinkIfNecessary("4.1-chain", 22, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, 11, 13);
 	}
 #else
 	void beginSession(MenuItem* navigatedBackwardFrom) {
