@@ -2121,12 +2121,18 @@ MenuItemSubmenu coloursSubmenu;
 
 char const* firmwareString = "4.1.4-alpha3";
 
+extern "C" void EXEC_BASE(void);
+
 class MenuItemFirmwareVersion final : public MenuItem {
 public:
 	MenuItemFirmwareVersion(char const* newName = 0) : MenuItem(newName) {}
 #if HAVE_OLED
 	void drawPixelsForOled() {
-		OLED::drawStringCentredShrinkIfNecessary(firmwareString, 22, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, 18, 20);
+    char buffer[13];
+    buffer[0] = 'Q';
+    // THE value was: Q 537267648
+    intToString((int)&EXEC_BASE, buffer+1, 1);
+		OLED::drawStringCentredShrinkIfNecessary(buffer, 22, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, 11, 13);
 	}
 #else
 	void beginSession(MenuItem* navigatedBackwardFrom) {
