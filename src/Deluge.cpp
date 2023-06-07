@@ -586,6 +586,7 @@ extern "C" int main2(void) {
 	new (&uiTimerManager) UITimerManager;
 	new (&storageManager) StorageManager;
 	new (&loadSongUI) LoadSongUI;
+	new (&loadFirmwareUI) LoadFirmwareUI;
 	new (&saveSongUI) SaveSongUI;
 	new (&contextMenuClearSong) ContextMenuClearSong;
 	new (&saveInstrumentPresetUI) SaveInstrumentPresetUI;

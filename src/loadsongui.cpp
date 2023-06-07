@@ -833,4 +833,17 @@ int LoadSongUI::padAction(int x, int y, int on) {
 	return ACTION_RESULT_DEALT_WITH;
 }
 
+// =====
+// LoadFirmwareUI (TODO: make this its own file)
+
+LoadFirmwareUI loadFirmwareUI;
+
+LoadFirmwareUI::LoadFirmwareUI() {
+	qwertyAlwaysVisible = true;
+	filePrefix = nullptr;
+#if HAVE_OLED
+	title = "chainloader";
+#endif
+}
+
 

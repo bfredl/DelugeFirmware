@@ -82,6 +82,7 @@
 #include "PatchCableSet.h"
 #include "MIDIDevice.h"
 #include "ContextMenuOverwriteBootloader.h"
+#include "loadsongui.h" // really: LoadFirmwareUI
 
 #if HAVE_OLED
 #include "oled.h"
@@ -2144,6 +2145,19 @@ public:
 #endif
 } firmwareVersionMenu;
 
+class MenuItemFirmwareLoad final : public MenuItem {
+public:
+	MenuItemFirmwareLoad(char const* newName = 0) : MenuItem(newName) {}
+#if HAVE_OLED
+	void drawPixelsForOled() {
+		OLED::drawStringCentredShrinkIfNecessary("delet this", 22, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, 11, 13);
+	}
+#else
+#endif
+	void beginSession(MenuItem* navigatedBackwardFrom) {
+		openUI(&loadFirmwareUI);
+	}
+} firmwareLoadMenu;
 
 // CV menu
 
@@ -2428,6 +2442,7 @@ SoundEditor::SoundEditor()
 	new (&flashStatusMenu) MenuItemFlashStatus(HAVE_OLED ? "Play-cursor" : "CURS");
 	new (&recordSubmenu) MenuItemSubmenu("Recording", recordMenuItems);
 	new (&firmwareVersionMenu) MenuItemFirmwareVersion("Firmware version");
+	new (&firmwareLoadMenu) MenuItemFirmwareLoad("Firmware load");
 
     static MenuItem* rootSettingsMenuItems[] = {&cvSelectionMenu, &gateSelectionMenu, &triggerClockMenu, &midiMenu, &defaultsSubmenu, &swingIntervalMenu,
     		&padsSubmenu, &sampleBrowserPreviewModeMenu, &flashStatusMenu, &recordSubmenu, &firmwareVersionMenu, NULL};

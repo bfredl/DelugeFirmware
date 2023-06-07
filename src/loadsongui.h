@@ -63,4 +63,27 @@ private:
 };
 extern LoadSongUI loadSongUI;
 
+class LoadFirmwareUI final : public LoadUI
+{
+public:
+    LoadFirmwareUI();
+    // OVERRIDE int buttonAction(int x, int y, bool on, bool inCardRoutine);
+    // OVERRIDE int timerCallback();
+    // OVERRIDE int verticalEncoderAction(int offset, bool inCardRoutine);
+    void graphicsRoutine() {}
+    // OVERRIDE int padAction(int x, int y, int velocity);
+    bool opened();
+    // void selectEncoderAction(int8_t offset);
+
+protected:
+    // void displayText(bool blinkImmediately = false);
+    // void enterKeyPress();
+    // void folderContentsReady(int entryDirection);
+    // void currentFileChanged(int movementDirection);
+    // void exitAction();
+
+    //int findNextFile(int offset);
+};
+extern LoadFirmwareUI loadFirmwareUI;
+
 #endif // LOADSONGUI_H
