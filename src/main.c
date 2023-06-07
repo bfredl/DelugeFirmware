@@ -28,7 +28,6 @@
 
 int main2(void);
 
-
 static void midiAndGateOutputTimerInterrupt (uint32_t int_sense)
 {
 

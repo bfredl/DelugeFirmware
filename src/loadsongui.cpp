@@ -925,6 +925,26 @@ void LoadFirmwareUI::performLoad() {
     	numericDriver.displayPopup(filePath.get());
 }
 
+extern "C" void EXEC_BASE(void);
+
+void chainloader(char *to, char *from, int size) {
+  for (int i = 0; i < size; i++) {
+    to[i] = from[i];
+  }
+  
+  void (*ptr)(void) = (void (*)(void))to;
+  ptr(); // lessgo
+}
+
+#include "mtu_all_cpus.h"
+void resetTimers(void) {
+    disableTimer(TIMER_MIDI_GATE_OUTPUT);
+	disableTimer(TIMER_SYSTEM_SLOW);
+	disableTimer(TIMER_SYSTEM_FAST);
+	disableTimer(TIMER_SYSTEM_SUPERFAST);
+}
+
+void resetTimers(void);
 void LoadImage(const char *path) {
   FILINFO fno;
 
@@ -946,8 +966,20 @@ void LoadImage(const char *path) {
         numericDriver.displayPopup("FETING");
         return;
       }
+
+    //resetTimers();
+    //chainloader((char *)&EXEC_BASE, (char *)buffer, fileSize);
+		//uint8_t* funcbuf = (uint8_t*)generalMemoryAllocator.alloc(1024, NULL, false, true);
+
+    char* funcbuf = (char *)0x20060800;
+    memcpy((void *)funcbuf, (void *)chainloader, 128);
+    void (*ptr)(char *, char *, int) = (void (*)(char *, char *, int))funcbuf;
+
     char buf[13];
     buf[0] = 'L';
-    intToString(fileSize, buf+1, 1);
+    intToString((int)ptr, buf+1, 1);
     numericDriver.displayPopup(buf);
+    resetTimers();
+    ptr((char *)&EXEC_BASE, (char *)buffer, fileSize);
 }
+
