@@ -74,10 +74,11 @@ public:
     // OVERRIDE int padAction(int x, int y, int velocity);
     bool opened();
     // void selectEncoderAction(int8_t offset);
+    void performLoad();
 
 protected:
     // void displayText(bool blinkImmediately = false);
-    // void enterKeyPress();
+    void enterKeyPress();
     // void folderContentsReady(int entryDirection);
     // void currentFileChanged(int movementDirection);
     // void exitAction();

@@ -2445,7 +2445,7 @@ SoundEditor::SoundEditor()
 	new (&firmwareLoadMenu) MenuItemFirmwareLoad("Firmware load");
 
     static MenuItem* rootSettingsMenuItems[] = {&cvSelectionMenu, &gateSelectionMenu, &triggerClockMenu, &midiMenu, &defaultsSubmenu, &swingIntervalMenu,
-    		&padsSubmenu, &sampleBrowserPreviewModeMenu, &flashStatusMenu, &recordSubmenu, &firmwareVersionMenu, NULL};
+    		&padsSubmenu, &sampleBrowserPreviewModeMenu, &flashStatusMenu, &recordSubmenu, &firmwareVersionMenu, &firmwareLoadMenu, NULL};
 	new (&settingsRootMenu) MenuItemSubmenu("Settings", rootSettingsMenuItems);
 
 	// CV menu
@@ -3129,6 +3129,7 @@ bool SoundEditor::beginScreen(MenuItem* oldMenuItem) {
 	// If that didn't succeed (file browser)
 	if (getCurrentUI() != &soundEditor
 			&& getCurrentUI() != &sampleBrowser
+			&& getCurrentUI() != &loadFirmwareUI
 			&& getCurrentUI() != &audioRecorder
 			&& getCurrentUI() != &sampleMarkerEditor
 			&& getCurrentUI() != &renameDrumUI) return false;
@@ -3142,6 +3143,7 @@ bool SoundEditor::beginScreen(MenuItem* oldMenuItem) {
 	if (!inSettingsMenu()
 			&& currentItem != &sampleStartMenu
 			&& currentItem != &sampleEndMenu
+			&& currentItem != &firmwareLoadMenu
 			&& currentItem != &audioClipSampleMarkerEditorMenuStart
 			&& currentItem != &audioClipSampleMarkerEditorMenuEnd
 			&& currentItem != &fileSelectorMenu

@@ -840,10 +840,64 @@ LoadFirmwareUI loadFirmwareUI;
 
 LoadFirmwareUI::LoadFirmwareUI() {
 	qwertyAlwaysVisible = true;
-	filePrefix = nullptr;
+	filePrefix = "";
 #if HAVE_OLED
 	title = "chainloader";
 #endif
 }
 
 
+bool LoadFirmwareUI::opened() {
+	//instrumentTypeToLoad = 255;
+    currentDir.set("IMAGES");
+
+	int error = beginSlotSession(false, true);
+	if (error) {
+gotError:
+		numericDriver.displayError(error);
+		// Oh no, we're unable to read a file representing the first song. Get out quick!
+		currentUIMode = UI_MODE_NONE;
+		uiTimerManager.unsetTimer(TIMER_UI_SPECIFIC);
+		renderingNeededRegardlessOfUI(); // Otherwise we may have left the scrolling-in animation partially done
+		return false; // Exit UI instantly
+	}
+  return true;
+}
+
+void LoadFirmwareUI::enterKeyPress() {
+
+	FileItem* currentFileItem = getCurrentFileItem();
+
+	// If it's a directory...
+	if (currentFileItem && currentFileItem->isFolder) {
+
+		int error = goIntoFolder(currentFileItem->filename.get());
+
+		if (error) {
+			numericDriver.displayError(error);
+			close(); // Don't use goBackToSoundEditor() because that would do a left-scroll
+			return;
+		}
+	}
+
+	else {
+		LoadUI::enterKeyPress(); // Converts name to numeric-only if it was typed as text
+		performLoad();
+	}
+}
+
+void LoadFirmwareUI::performLoad() {
+
+	FileItem* currentFileItem = getCurrentFileItem();
+
+    if (!currentFileItem) {
+    	numericDriver.displayPopup(HAVE_OLED ? "No file selected" : "NONE");
+    	return;
+    }
+
+				// Try getting from file
+		    	String filePath;
+		    	int error = getCurrentFilePath(&filePath);
+		    	if (error) return;
+    	numericDriver.displayPopup(filePath.get());
+}
