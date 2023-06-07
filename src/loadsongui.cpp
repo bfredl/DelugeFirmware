@@ -846,10 +846,12 @@ LoadFirmwareUI::LoadFirmwareUI() {
 #endif
 }
 
+char const* allowedFileExtensionsImages[] = {"BIN", NULL};
 
 bool LoadFirmwareUI::opened() {
 	//instrumentTypeToLoad = 255;
     currentDir.set("IMAGES");
+	allowedFileExtensions = allowedFileExtensionsImages;
 
 	int error = beginSlotSession(false, true);
 	if (error) {
@@ -861,7 +863,28 @@ gotError:
 		renderingNeededRegardlessOfUI(); // Otherwise we may have left the scrolling-in animation partially done
 		return false; // Exit UI instantly
 	}
-  return true;
+    currentUIMode = UI_MODE_VERTICAL_SCROLL;
+
+    timerCallback(); // Start scrolling animation out of the View
+
+    PadLEDs::clearTickSquares();
+
+    error = arrivedInNewFolder(0, "", "IMAGES");
+    if (error) goto gotError;
+
+    focusRegained();
+
+    if (currentUIMode != UI_MODE_VERTICAL_SCROLL) {
+    	currentUIMode = UI_MODE_VERTICAL_SCROLL; // Have to reset this again - it might have finished the first bit of the scroll
+    	timerCallback();
+    }
+
+    if (ALPHA_OR_BETA_VERSION && currentUIMode == UI_MODE_WAITING_FOR_NEXT_FILE_TO_LOAD) {
+    	numericDriver.freezeWithError("E188");
+    }
+
+
+    return true;
 }
 
 void LoadFirmwareUI::enterKeyPress() {

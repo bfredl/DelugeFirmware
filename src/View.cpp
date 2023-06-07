@@ -282,9 +282,9 @@ doEndMidiLearnPressSession:
 					currentUIMode = UI_MODE_NONE;
 
 					if ((int32_t)(AudioEngine::audioSampleTimer - timeSaveButtonPressed) < (44100 >> 1)) {
-						//bool success = openUI(&loadSongUI);
+						bool success = openUI(&loadSongUI);
             // TODO: don't do this
-						bool success = openUI(&loadFirmwareUI);
+						//bool success = openUI(&loadFirmwareUI);
 
 						// Need to redraw everything if no success, because the LoadSongUI does some drawing before even determining whether it can start successfully
 						if (!success) {
