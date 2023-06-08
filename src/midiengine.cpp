@@ -28,7 +28,10 @@
 #include "MIDIDevice.h"
 #include "MIDIDeviceManager.h"
 
+#include "oled.h"
+
 extern "C" {
+#include "cache/cache.h"
 #include "sio_char.h"
 
 volatile uint32_t usbLock = 0;
@@ -590,6 +593,41 @@ void MidiEngine::setupUSBHostReceiveTransfer(int ip, int midiDeviceNum) {
 
 uint8_t usbCurrentlyInitialized = false;
 
+// TODO: per device!
+static uint8_t sysexBuffer[128];
+int sysexPos = 0;
+
+void handle_sysex_module(uint8_t *data, int size);
+void check_sysex(uint8_t const* readPos) {
+	uint8_t statusType	= readPos[0] & 15;
+	int to_read = 0;
+	bool will_end = false;
+	if (statusType == 0x4) {
+		// sysex start or continue
+		if (readPos[1] == 0xf0) {
+			sysexPos = 0;
+		}
+		to_read = 3;
+	} else if (statusType >= 0x5 && statusType <= 0x7) {
+		to_read = statusType - 0x4; // read between 1-3 bytes
+		will_end = true;
+	}
+
+	for (int i = 0; i < to_read; i++) {
+		if (sysexPos >= sizeof(sysexBuffer)) {
+			sysexPos = 0; return; // bail out
+		}
+		sysexBuffer[sysexPos++] = readPos[i+1];
+	}
+
+	if (will_end) {
+		if (sysexBuffer[0]== 0xf0 && sysexBuffer[1] == 0x67) {
+			handle_sysex_module(sysexBuffer, sysexPos);
+		}
+		sysexPos = 0;
+	}
+}
+
 void MidiEngine::checkIncomingUsbMidi() {
 
 	if (!usbCurrentlyInitialized) return;
@@ -635,6 +673,7 @@ void MidiEngine::checkIncomingUsbMidi() {
 								statusType = 0x0F;
 							}
 							else { // Invalid, or sysex, or something
+								check_sysex(readPos);
 								continue;
 							}
 						}
