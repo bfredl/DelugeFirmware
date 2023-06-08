@@ -633,27 +633,64 @@ void check_sysex(uint8_t const* readPos) {
 // and high bytes are collated in LSB order, ie byte0 = byte0low+0x80*(1 & byte0_3high), byte1 = byte1low+0x80+nonzero(2 & byte0_3high)
 // then pos = 8*(pos1+0x80*pos2), buffer[pos:pos+8] = byte[0:8] (end exclusive)
 
-uint8_t buffer[8*1024];
+uint8_t scratch_buffer[16*1024];  // gimme some bss
 
 void handle_sysex() {
   if (sysexPos < 3) return;
   const uint8_t *s = sysexBuffer;
   if (s[0]  != 0xf0 or s[1] != 0x67) return;
 
-  if (s[2] == 0) {
-    // write
-  if (sysexPos < 17) return;
-  char bytes[8];
-  memcpy(bytes,s+5,8);
-  for (int i = 0; i < 7; i++) {
-    bytes[i] += 0x80*((s[13] & (1 << i))?1:0);
-  }
-  bytes[7] += 0x80*(s[14] ? 1 : 0);
-
   int pos = 8*(s[3]+0x80*s[4]);
-  if (pos+8 > sizeof(buffer)) return;
+  int x = s[5];
 
- };
+  char bytes[8];
+  if (sysexPos >= 17) {
+    memcpy(bytes,s+5,8);
+    for (int i = 0; i < 7; i++) {
+      bytes[i] += 0x80*((s[13] & (1 << i))?1:0);
+    }
+    bytes[7] += 0x80*(s[14] ? 1 : 0);
+  }
+  int c = s[2];
+
+  if (c == 0) {
+      // write
+    if (sysexPos < 17) return;
+
+    if (pos+8 > sizeof(scratch_buffer)) return;  // just checking..
+
+    memcpy(scratch_buffer+pos, bytes, 8);
+  } else if (c <16) { // execute
+
+    auto ptr = (int (*)(uint8_t *, char *))(scratch_buffer+pos);
+    int result = ptr(scratch_buffer, bytes);
+
+    if (c == 2) {
+      char buffer[16] = "the: ";
+      intToString(result, buffer+5);
+      OLED::popupText(buffer, true);
+    } else if (c == 3 or c == 4) {
+      char *text = (char *)result;
+      OLED::popupText(text, (c == 3));
+    }
+  } else if (c == 16) { // print
+    if (sysexPos < 17) return;
+      char buffer[16] = "show: ";
+      memcpy(buffer+6,bytes,8);
+      buffer[6+8] = 0; // just in case
+      OLED::popupText(buffer, true);
+  } else if (c == 17) { // pique
+      char buffer[16] = "peek: ";
+      intToString(scratch_buffer[pos+x], buffer+6);
+      OLED::popupText(buffer, true);
+  } else if (c == 18) { // pos of piqee
+      char buffer[16] = "ppos: ";
+      intToString(pos+x, buffer+6);
+      OLED::popupText(buffer, true);
+  } else {
+      OLED::popupText("u w0t m8", true);
+  }
+
 
   // sysexBuffer[sysexPos-1] = 0;
   // OLED::popupText((char *)(sysexBuffer+1), true);
