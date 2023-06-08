@@ -632,19 +632,22 @@ void check_sysex(uint8_t const* readPos) {
 // where byteXlow = byteX % 0x7F
 // and high bytes are collated in LSB order, ie byte0 = byte0low+0x80*(1 & byte0_3high), byte1 = byte1low+0x80+nonzero(2 & byte0_3high)
 // then pos = 8*(pos1+0x80*pos2), buffer[pos:pos+8] = byte[0:8] (end exclusive)
+//
 
 uint8_t scratch_buffer[16*1024];  // gimme some bss
 
 void handle_sysex() {
-  if (sysexPos < 3) return;
+  if (sysexPos < 7) return; // F0 67 cmd pos1 pos2 x F7
   const uint8_t *s = sysexBuffer;
   if (s[0]  != 0xf0 or s[1] != 0x67) return;
 
   int pos = 8*(s[3]+0x80*s[4]);
-  int x = s[5];
+  int x = s[5]; // not used with bytes!!
 
   char bytes[8];
+  bool has_bytes = false;
   if (sysexPos >= 17) {
+    has_bytes = true;
     memcpy(bytes,s+5,8);
     for (int i = 0; i < 7; i++) {
       bytes[i] += 0x80*((s[13] & (1 << i))?1:0);
@@ -655,7 +658,7 @@ void handle_sysex() {
 
   if (c == 0) {
       // write
-    if (sysexPos < 17) return;
+    if (not has_bytes) return;
 
     if (pos+8 > sizeof(scratch_buffer)) return;  // just checking..
 
@@ -663,6 +666,7 @@ void handle_sysex() {
   } else if (c <16) { // execute
 
     auto ptr = (int (*)(uint8_t *, char *))(scratch_buffer+pos);
+    if (!has_bytes) bytes[0] = x; // as a treat
     int result = ptr(scratch_buffer, bytes);
 
     if (c == 2) {
@@ -680,10 +684,12 @@ void handle_sysex() {
       buffer[6+8] = 0; // just in case
       OLED::popupText(buffer, true);
   } else if (c == 17) { // pique
+    if (sysexPos < 7) return;
       char buffer[16] = "peek: ";
       intToString(scratch_buffer[pos+x], buffer+6);
       OLED::popupText(buffer, true);
   } else if (c == 18) { // pos of piqee
+    if (sysexPos < 7) return;
       char buffer[16] = "ppos: ";
       intToString(pos+x, buffer+6);
       OLED::popupText(buffer, true);
