@@ -28,6 +28,8 @@
 #include "MIDIDevice.h"
 #include "MIDIDeviceManager.h"
 
+#include "oled.h"
+
 extern "C" {
 #include "sio_char.h"
 
@@ -590,6 +592,73 @@ void MidiEngine::setupUSBHostReceiveTransfer(int ip, int midiDeviceNum) {
 
 uint8_t usbCurrentlyInitialized = false;
 
+// TODO: per device!
+static uint8_t sysexBuffer[32];
+int sysexPos = 0;
+
+void handle_sysex(void);
+void check_sysex(uint8_t const* readPos) {
+  uint8_t statusType	= readPos[0] & 15;
+  int to_read = 0;
+  bool will_end = false;
+  if (statusType == 0x4) {
+    // sysex start or continue
+    if (readPos[1] == 0xf0) {
+      sysexPos = 0;
+    }
+    to_read = 3;
+  } else if (statusType >= 0x5 && statusType <= 0x7) {
+    to_read = statusType - 0x4; // read between 1-3 bytes
+    will_end = true;
+  }
+
+  for (int i = 0; i < to_read; i++) {
+    if (sysexPos >= sizeof(sysexBuffer)) {
+      sysexPos = 0; return; // bail out
+    }
+    sysexBuffer[sysexPos++] = readPos[i+1];
+  }
+
+  if (will_end) {
+    handle_sysex();
+    sysexPos = 0;
+  }
+}
+
+// data format:
+// F0 67 CMD extra F7
+// write buffer:
+// F0 67 0 pos1 pos2 byte0low ... byte7low byte0-6high byte7high F7 == 5+8+3 = 16 bytes
+// where byteXlow = byteX % 0x7F
+// and high bytes are collated in LSB order, ie byte0 = byte0low+0x80*(1 & byte0_3high), byte1 = byte1low+0x80+nonzero(2 & byte0_3high)
+// then pos = 8*(pos1+0x80*pos2), buffer[pos:pos+8] = byte[0:8] (end exclusive)
+
+uint8_t buffer[8*1024];
+
+void handle_sysex() {
+  if (sysexPos < 3) return;
+  const uint8_t *s = sysexBuffer;
+  if (s[0]  != 0xf0 or s[1] != 0x67) return;
+
+  if (s[2] == 0) {
+    // write
+  if (sysexPos < 17) return;
+  char bytes[8];
+  memcpy(bytes,s+5,8);
+  for (int i = 0; i < 7; i++) {
+    bytes[i] += 0x80*((s[13] & (1 << i))?1:0);
+  }
+  bytes[7] += 0x80*(s[14] ? 1 : 0);
+
+  int pos = 8*(s[3]+0x80*s[4]);
+  if (pos+8 > sizeof(buffer)) return;
+
+ };
+
+  // sysexBuffer[sysexPos-1] = 0;
+  // OLED::popupText((char *)(sysexBuffer+1), true);
+}
+
 void MidiEngine::checkIncomingUsbMidi() {
 
 	if (!usbCurrentlyInitialized) return;
@@ -635,6 +704,7 @@ void MidiEngine::checkIncomingUsbMidi() {
 								statusType = 0x0F;
 							}
 							else { // Invalid, or sysex, or something
+                                check_sysex(readPos);
 								continue;
 							}
 						}
