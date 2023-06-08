@@ -29,6 +29,11 @@
 #include "processing/engines/audio_engine.h"
 #include "util/functions.h"
 #include <string.h>
+#include "hid/hid_sysex.h"
+#include "util/pack.h"
+#include "io/debug/module.h"
+
+#include "hid/display/oled.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -724,6 +729,9 @@ void MidiEngine::checkIncomingUsbSysex(uint8_t const* msg, int32_t ip, int32_t d
 	}
 }
 
+__attribute__ ((aligned (CACHE_LINE_SIZE))) uint8_t loadable_mod_data[64*1024];
+LoadableModule *loadable_module = nullptr;
+
 void MidiEngine::debugSysexReceived(MIDIDevice* device, uint8_t* data, int32_t len) {
 	if (len < 6) {
 		return;
@@ -739,6 +747,46 @@ void MidiEngine::debugSysexReceived(MIDIDevice* device, uint8_t* data, int32_t l
 			Debug::midiDebugDevice = nullptr;
 		}
 		break;
+
+	case 1: {
+		if (loadable_module != nullptr) {
+			loadable_module->unload();
+			loadable_module = nullptr;
+		}
+		int pos = 512*(data[4]+0x80*data[5]);
+		const int size = 512;
+		const int packed_size = 586; // ceil(512+512/7)
+		if (len < packed_size+7 || pos + 512 > sizeof(loadable_mod_data)) {
+			return;
+		}
+
+		unpack_7bit_to_8bit(loadable_mod_data+pos, size, data+6, packed_size);
+		// "don't ask"
+		unpack_7bit_to_8bit(loadable_mod_data+pos+UNCACHED_MIRROR_OFFSET, size, data+6, packed_size);
+		break;
+	}
+
+	case 2: {
+		if (len < 12) {
+			return;
+		}
+		int size = 512*(data[4]+0x80*data[5]);
+		uint32_t checksum;
+		unpack_7bit_to_8bit((uint8_t *)&checksum, 4, data+6, 5);
+		uint32_t actual = get_crc(loadable_mod_data, size);
+		if (checksum == actual) {
+			auto ptr = (void (*)(void))loadable_mod_data;
+			ptr();
+		} else {
+			numericDriver.displayPopup(HAVE_OLED ? "checksum fail" : "CRC FAIL");
+		}
+		break;
+	}
+
+	case 3:
+		if(loadable_module != nullptr) {
+			loadable_module->sysex(device, data, len);
+		}
 	}
 }
 

@@ -26,6 +26,7 @@
 #include "playback/playback_handler.h"
 #include "processing/engines/audio_engine.h"
 #include "testing/hardware_testing.h"
+#include "io/debug/module.h"
 
 namespace Buttons {
 
@@ -48,6 +49,13 @@ ActionResult buttonAction(hid::Button b, bool on, bool inCardRoutine) {
 #endif
 
 	ActionResult result;
+
+	if (b == CROSS_SCREEN_EDIT && on) {
+		if (isButtonPressed(LEARN) && loadable_module != nullptr) {
+			loadable_module->activate();
+			goto dealtWith;
+		}
+	}
 
 	// See if it was one of the mod buttons
 	for (int32_t i = 0; i < kNumModButtons; i++) {

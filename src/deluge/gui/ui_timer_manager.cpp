@@ -52,6 +52,8 @@ UITimerManager::UITimerManager() {
 	}
 }
 
+void (*timer_module_cb)(void) = NULL;
+
 void UITimerManager::routine() {
 
 	int32_t timeTilNextEvent = (uint32_t)(timeNextEvent - AudioEngine::audioSampleTimer);
@@ -157,6 +159,11 @@ void UITimerManager::routine() {
 					OLED::scrollingAndBlinkingTimerEvent();
 					break;
 #endif
+				case TIMER_MODULE:
+					if (timer_module_cb) {
+						timer_module_cb();
+					}
+					break;
 				}
 			}
 		}
