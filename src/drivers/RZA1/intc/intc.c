@@ -267,6 +267,12 @@ int32_t R_INTC_Disable(uint16_t int_id)
     return DEVDRV_SUCCESS;
 }
 
+int32_t R_INTC_Disable_all() {
+    volatile uint32_t *addr = (volatile uint32_t *)&INTC.ICDICER0;
+    uint32_t mask = 0xffffffff;
+
+}
+
 /******************************************************************************
 * Function Name: R_INTC_SetPriority
 * Description  : Sets the priority level of the ID specified by the int_id to 

@@ -73,6 +73,7 @@ static void int_irq6 (uint32_t sense)
 
 
 
+void chainload();
 
 /******************************************************************************
 * Function Name: main
@@ -183,6 +184,62 @@ int_t main1(void)
 	main2();
 
     while (1);
+}
+
+void chainloader2(char *to, char *from, int size) {
+  for (int i = 0; i < size; i++) {
+    to[i] = from[i];
+  }
+  
+  void (*ptr)(void) = (void (*)(void))to;
+  ptr(); // lessgo
+}
+
+extern void EXEC_BASE(void);
+// const void *true_base = (void *)0x20060dc0;
+
+extern uint32_t __heap_start;
+#include <string.h>
+void chainload() {
+  FILINFO fno;
+
+  const char path[] = "IMAGES/chain.bin";
+
+			int result = f_stat(path, &fno);
+      FSIZE_t fileSize = fno.fsize;
+
+			FIL currentFile;
+			// Open the file
+			result = f_open(&currentFile, path, FA_READ);
+			if (result != FR_OK) {
+    	//numericDriver.displayPopup(HAVE_OLED ? "FAILE" : "NONE");
+      return;
+			}
+
+			UINT numBytesRead;
+			uint8_t* buffer = (uint8_t *)__heap_start;;
+			result = f_read(&currentFile, buffer, fileSize, &numBytesRead);
+			if (!buffer) {
+        //numericDriver.displayPopup("FETING");
+        return;
+      }
+
+    //resetTimers();
+    //chainloader((char *)&EXEC_BASE, (char *)buffer, fileSize);
+		//uint8_t* funcbuf = (uint8_t*)generalMemoryAllocator.alloc(1024, NULL, false, true);
+
+    char* funcbuf = (char *)0x20060700;
+    memcpy((void *)funcbuf, (void *)chainloader2, 128);
+    void (*ptr)(char *, char *, int) = (void (*)(char *, char *, int))funcbuf;
+
+    disableTimer(TIMER_MIDI_GATE_OUTPUT);
+	disableTimer(TIMER_SYSTEM_SLOW);
+	disableTimer(TIMER_SYSTEM_FAST);
+	disableTimer(TIMER_SYSTEM_SUPERFAST);
+	R_INTC_Disable(IRQ_INTERRUPT_0 + 6);
+
+    char buf[13];
+    ptr((char *)&EXEC_BASE, (char *)buffer, fileSize);
 }
 
 /* End of File */

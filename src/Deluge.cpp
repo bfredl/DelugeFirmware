@@ -128,6 +128,8 @@ bool inInterrupt = false;
 
 bool allowSomeUserActionsEvenWhenInCardRoutine = false;
 
+extern "C" void chainload();
+
 extern "C" void timerGoneOff(void) {
 	inInterrupt = true;
 	cvEngine.updateGateOutputs();
@@ -852,6 +854,8 @@ resetSettings:
 	// Ideally I'd like to repeatedly switch between host and peripheral mode anytime there's no USB connection.
 	// To do that, I'd really need to know at any point in time whether the user had just made a connection, just then, that hadn't fully
 	// initialized yet. I think I sorta have that for host, but not for peripheral yet.
+
+  chainload();
 
 	MIDIDeviceManager::readDevicesFromFile(); // Hopefully we can read this file now.
 
