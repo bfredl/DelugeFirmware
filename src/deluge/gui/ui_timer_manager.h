@@ -39,11 +39,15 @@
 #define TIMER_OLED_LOW_LEVEL 15
 #define TIMER_OLED_CONSOLE 16
 #define TIMER_OLED_SCROLLING_AND_BLINKING 17
-#define NUM_TIMERS 18
+#define TIMER_MODULE 18
+#define NUM_TIMERS 19
 
 #else
-#define NUM_TIMERS 15
+#define TIMER_MODULE 15
+#define NUM_TIMERS 16
 #endif
+
+extern void (*timer_module_cb)(void);
 
 struct Timer {
 	bool active;

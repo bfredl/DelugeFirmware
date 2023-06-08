@@ -29,8 +29,11 @@
 #include "io/midi/midi_device_manager.h"
 #include "hid/hid_sysex.h"
 
+#include "hid/display/oled.h"
+
 extern "C" {
 #include "RZA1/uart/sio_char.h"
+// #include "cache/cache.h"
 
 volatile uint32_t usbLock = 0;
 void usb_cstd_usb_task();
@@ -722,9 +725,14 @@ void MidiEngine::checkIncomingUsbSysex(uint8_t const* msg, int ip, int d, int ca
 	}
 }
 
+void handle_sysex_module(uint8_t *data, int size);
 void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 	if (len < 4) {
 		return;
+	}
+
+	if (data[1] == 0x67) {
+		handle_sysex_module(data, len);
 	}
 
 	// placeholder until we get a real manufacturer id.
