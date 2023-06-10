@@ -31,6 +31,7 @@
 #include "oled.h"
 
 extern "C" {
+#include "cache/cache.h"
 #include "sio_char.h"
 
 volatile uint32_t usbLock = 0;
@@ -641,7 +642,8 @@ void check_sysex(uint8_t const* readPos) {
 
 __attribute__ ((aligned (CACHE_LINE_SIZE))) uint8_t scratch_buffer[32*1024];  // gimme some bss
 
- void handle_sysex() {
+extern "C" void dcache_flush(void *opstartadr, unsigned int len);
+void handle_sysex() {
   int size = sysexPos;
   if (size < 7) return; // F0 67 cmd pos1 pos2 x F7
   const uint8_t *s = sysexBuffer;
@@ -702,6 +704,19 @@ __attribute__ ((aligned (CACHE_LINE_SIZE))) uint8_t scratch_buffer[32*1024];  //
       char buffer[16] = "ppos: ";
       intToString(pos+x, buffer+6);
       OLED::popupText(buffer, true);
+  } else if (c == 19) { // flush cache
+	  asm("dsb ish");  // Gesundheit
+	  L1_D_CacheWritebackFlushAll();
+	  L1_I_CacheFlushAll();
+  } else if (c == 20) { // flush cache (try again)
+	  dcache_flush(scratch_buffer, 2024); // just for testing, get size later!
+	  asm("dsb ish");  // Gesundheit
+	  L1_D_CacheWritebackFlushAll();
+	  L1_I_CacheFlushAll();
+  } else if (c == 21) { // flush cache (try again)
+	  dcache_flush(scratch_buffer, 2024); // just for testing, get size later!
+	  asm("dsb ish");  // Gesundheit
+	  L1_I_CacheFlushAll();
   } else {
       OLED::popupText("u w0t m8", true);
   }

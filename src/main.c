@@ -70,9 +70,9 @@ static void int_irq6(uint32_t sense) {
 
 /******************************************************************************
 * Function Name: main
-* Description  : Displays the sample program information on the terminal 
-*              : connected with the CPU board by the UART, and executes initial 
-*              : setting for the PORT connected with the LEDs on the board. 
+* Description  : Displays the sample program information on the terminal
+*              : connected with the CPU board by the UART, and executes initial
+*              : setting for the PORT connected with the LEDs on the board.
 *              : Executes initial setting for the OSTM channel 0.
 * Arguments    : none
 * Return Value : 0
@@ -178,3 +178,37 @@ int_t main1(void) {
 }
 
 /* End of File */
+
+
+typedef uint32_t u32;
+#define XREG_CP15_CLEAN_INVAL_DC_LINE_MVA_POC	"p15, 0, %0,  c7, c14, 1"
+#define asm_cp15_clean_inval_dc_line_mva_poc(param) __asm__ __volatile__("mcr " \
+			XREG_CP15_CLEAN_INVAL_DC_LINE_MVA_POC :: "r" (param));
+void dcache_flush(u32 opstartadr, u32 len)
+{
+	const u32 cacheline = 32U;
+	u32 opendadr;
+	u32 currmask;
+	u32 tempadr;
+
+	//volatile u32 *L2CCOffset = (volatile u32 *)(XPS_L2CC_BASEADDR + XPS_L2CC_CACHE_INV_CLN_PA_OFFSET);
+
+	//currmask = mfcpsr();
+	//mtcpsr(currmask | IRQ_FIQ_MASK);
+
+	if (len != 0U) {
+		opendadr = opstartadr + len;
+		opstartadr &= ~(cacheline - 1U);
+
+		tempadr = opstartadr;
+
+		while (tempadr < opendadr) {
+			/* Flush L1 Data cache line */
+			asm_cp15_clean_inval_dc_line_mva_poc(tempadr);
+			tempadr += cacheline;
+		}
+		/* Wait for L1 cache clean and invalidation to complete */
+
+	}
+	// mtcpsr(currmask);
+}
