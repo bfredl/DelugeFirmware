@@ -72,8 +72,8 @@ private:
 	void drawNoteCode(int noteCode);
 
 	KeyboardPadPress padPresses[MAX_NUM_KEYBOARD_PAD_PRESSES];
-	uint8_t noteColours[displayHeight * KEYBOARD_ROW_INTERVAL + displayWidth][3];
-	bool yDisplayActive[displayHeight * KEYBOARD_ROW_INTERVAL + displayWidth];
+	uint8_t noteColours[displayHeight * KEYBOARD_ROW_INTERVAL_MAX + displayWidth][3];
+	bool yDisplayActive[displayHeight * KEYBOARD_ROW_INTERVAL_MAX + displayWidth];
 };
 
 extern KeyboardScreen keyboardScreen;

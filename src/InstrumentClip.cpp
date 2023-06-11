@@ -77,6 +77,8 @@ InstrumentClip::InstrumentClip(Song* song) : Clip(CLIP_TYPE_INSTRUMENT) {
 	midiSub = 128;  // Means none
 	midiPGM = 128;  // Means none
 
+	keyboardRowInterval = 5;
+
 	currentlyRecordingLinearly = false;
 
 	if (song) colourOffset -= song->rootNote;
@@ -103,7 +105,7 @@ InstrumentClip::InstrumentClip(Song* song) : Clip(CLIP_TYPE_INSTRUMENT) {
 		yScroll =
 		    0; // Only for safety. Shouldn't actually get here if we're not going to overwrite this elsewhere I think...
 	}
-	yScrollKeyboardScreen = 60 - (displayHeight >> 2) * KEYBOARD_ROW_INTERVAL;
+	yScrollKeyboardScreen = 60 - (displayHeight >> 2) * keyboardRowInterval;
 
 	instrumentTypeWhileLoading = 0;
 }
@@ -1219,7 +1221,7 @@ bool InstrumentClip::renderAsSingleRow(ModelStackWithTimelineCounter* modelStack
 
 	// Special case if we're a simple keyboard-mode Clip
 	if (onKeyboardScreen && !containsAnyNotes()) {
-		int increment = (displayWidth + (displayHeight * KEYBOARD_ROW_INTERVAL)) / displayWidth;
+		int increment = (displayWidth + (displayHeight * keyboardRowInterval)) / displayWidth;
 		for (int x = xStart; x < xEnd; x++) {
 			getMainColourFromY(yScrollKeyboardScreen + x * increment, 0, &image[x * 3]);
 		}
