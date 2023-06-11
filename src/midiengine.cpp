@@ -709,18 +709,17 @@ void handle_sysex() {
 	  L1_D_CacheWritebackFlushAll();
 	  L1_I_CacheFlushAll();
   } else if (c == 20) { // flush cache (try again)
-	  dcache_flush(scratch_buffer, 2024); // just for testing, get size later!
+	  dcache_flush(scratch_buffer, 1024); // just for testing, get size later!
 	  asm("dsb ish");  // Gesundheit
 	  L1_D_CacheWritebackFlushAll();
 	  L1_I_CacheFlushAll();
   } else if (c == 21) { // flush cache (try again)
-	  dcache_flush(scratch_buffer, 2024); // just for testing, get size later!
+	  dcache_flush(scratch_buffer, 1024); // just for testing, get size later!
 	  asm("dsb ish");  // Gesundheit
 	  L1_I_CacheFlushAll();
   } else {
       OLED::popupText("u w0t m8", true);
   }
-
 
   // sysexBuffer[sysexPos-1] = 0;
   // OLED::popupText((char *)(sysexBuffer+1), true);
