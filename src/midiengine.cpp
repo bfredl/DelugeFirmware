@@ -642,6 +642,16 @@ void check_sysex(uint8_t const* readPos) {
 
 __attribute__ ((aligned (CACHE_LINE_SIZE))) uint8_t scratch_buffer[32*1024];  // gimme some bss
 
+volatile int hammerfield;
+
+extern uint32_t __heap_start;
+void hammertime (void) {
+	volatile int *heap = (volatile int *)__heap_start;
+	for (int i = 0; i < 8192; i ++) {
+		hammerfield += heap[i];
+	}
+}
+
 extern "C" void dcache_flush(void *opstartadr, unsigned int len);
 void handle_sysex() {
   int size = sysexPos;
@@ -706,16 +716,20 @@ void handle_sysex() {
       OLED::popupText(buffer, true);
   } else if (c == 19) { // flush cache
 	  asm("dsb ish");  // Gesundheit
-	  L1_D_CacheWritebackFlushAll();
+	  L1_D_CacheWritebackAll();
 	  L1_I_CacheFlushAll();
   } else if (c == 20) { // flush cache (try again)
 	  dcache_flush(scratch_buffer, 1024); // just for testing, get size later!
 	  asm("dsb ish");  // Gesundheit
-	  L1_D_CacheWritebackFlushAll();
+	  L1_D_CacheWritebackAll();
 	  L1_I_CacheFlushAll();
   } else if (c == 21) { // flush cache (try again)
 	  dcache_flush(scratch_buffer, 1024); // just for testing, get size later!
 	  asm("dsb ish");  // Gesundheit
+	  L1_I_CacheFlushAll();
+  } else if (c == 22) { // hammer some memory to get scratch_buffer out of L1
+	  hammertime();
+  } else if (c == 23) {
 	  L1_I_CacheFlushAll();
   } else {
       OLED::popupText("u w0t m8", true);
