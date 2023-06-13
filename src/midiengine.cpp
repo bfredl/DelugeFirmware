@@ -652,6 +652,17 @@ void hammertime (void) {
 	}
 }
 
+
+static inline uint32_t __ac_X31_hash_string(const unsigned char *s, int len)
+{
+  if (!len) return 0;
+  uint32_t h = (uint32_t)*s;
+  for (int i = 1 ; i < len; ++i) {
+    h = (h << 5) - h + (uint32_t)s[i];
+  }
+  return h;
+}
+
 extern "C" void dcache_flush(void *opstartadr, unsigned int len);
 void handle_sysex() {
   int size = sysexPos;
@@ -663,7 +674,7 @@ void handle_sysex() {
   int x = s[5]; // not used with bytes!!
   int f = 0; // (1<<0) and (1<<1) reserved for bytes
 
-  char bytes[16];
+  __attribute__ ((aligned (16))) char bytes[16];
   bool has_bytes = false;
   if (size >= 25) {
     has_bytes = true;
@@ -731,6 +742,14 @@ void handle_sysex() {
 	  hammertime();
   } else if (c == 23) {
 	  L1_I_CacheFlushAll();
+  } else if (c == 24) {
+    if (!has_bytes) return;
+	int *data = (int *)bytes;
+	int pos = data[0], size = data[1];
+	unsigned int hash = __ac_X31_hash_string(scratch_buffer+pos,size);
+      char buffer[16] = "hass: ";
+      intToString(hash, buffer+6);
+      OLED::popupText(buffer, true);
   } else {
       OLED::popupText("u w0t m8", true);
   }
