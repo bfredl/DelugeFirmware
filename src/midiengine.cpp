@@ -646,7 +646,7 @@ volatile int hammerfield;
 
 extern uint32_t __heap_start;
 void hammertime (void) {
-	volatile int *heap = (volatile int *)__heap_start;
+	volatile int *heap = (volatile int *)check_sysex;
 	for (int i = 0; i < 8192; i ++) {
 		hammerfield += heap[i];
 	}
@@ -750,6 +750,11 @@ void handle_sysex() {
       char buffer[16] = "hass: ";
       intToString(hash, buffer+6);
       OLED::popupText(buffer, true);
+  } else if (c == 25) {
+	  L1_D_CacheWritebackAll();
+	  L1_I_CacheFlushAll();
+  } else if (c == 26) {
+	  L1_D_CacheWritebackAll();
   } else {
       OLED::popupText("u w0t m8", true);
   }
