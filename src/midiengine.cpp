@@ -696,6 +696,7 @@ void handle_sysex() {
     if (pos+16 > sizeof(scratch_buffer)) return;  // just checking..
 
     memcpy(scratch_buffer+pos, bytes, 16);
+    memcpy(scratch_buffer+UNCACHED_MIRROR_OFFSET+pos, bytes, 16);
   } else if (c <16) { // execute
     if ((!has_bytes) and size >= 8) f=s[6]; // F0 c pos1 pos2 x moff F7
     int moff = (f&12); // otherwise 0,4,8,12 offset within the 16-byte block
