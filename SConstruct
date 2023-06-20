@@ -213,3 +213,13 @@ elf_file = env.Program(
 env.BINBuilder(os.path.join(build_dir, env["FIRMWARE_FILENAME"]), source=elf_file)
 # Hex it.
 env.HEXBuilder(os.path.join(build_dir, env["FIRMWARE_FILENAME"]), source=elf_file)
+
+module = GetOption("module")
+if module:
+    module_dir = "module/"
+    mod_env = env.Clone()
+    mod_env["LINKFLAGS"] = f"-T module/module.ld -nostartfiles -Wl,-R,{elf_file[0]}"
+    sources = [f"module/{module}.cpp", f"module/startup.cpp"]
+    objects = mod_env.Object(sources)
+    mod_file = mod_env.Program(os.path.join(build_dir, "module.elf"), source=objects)
+    mod_env.BINBuilder(os.path.join(build_dir, "module.bin"), source=mod_file)

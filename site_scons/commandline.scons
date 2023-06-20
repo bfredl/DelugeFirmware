@@ -24,3 +24,15 @@ AddOption(
     metavar="TARGET",
     help='Build target directory as in e2studio, prefaced with "dbt-" instead of "e2-"',
 )
+
+
+AddOption(
+    "--module",
+    dest="module",
+    default="",
+    type="string",
+    nargs=1,
+    action="store",
+    metavar="MODULE",
+    help='module name',
+)
