@@ -48,6 +48,7 @@
 #include "modulation/patch/patch_cable_set.h"
 #include "model/clip/instrument_clip.h"
 #include "storage/flash_storage.h"
+#include "dexed/engine.h"
 
 extern "C" {
 #include "drivers/ssi/ssi.h"
@@ -276,7 +277,7 @@ activenessDetermined:
 			if (unisonParts[u].sources[s].active) {
 				bool success =
 				    unisonParts[u].sources[s].noteOn(this, source, &guides[s], samplesLate, sound->oscRetriggerPhase[s],
-				                                     resetEnvelopes, sound->synthMode);
+				                                     resetEnvelopes, sound->synthMode, velocity);
 				if (!success) return false; // This shouldn't really ever happen I don't think really...
 			}
 		}
@@ -561,6 +562,12 @@ void Voice::noteOff(ModelStackWithVoice* modelStack, bool allowReleaseStage) {
 						if (!success) {
 							unisonParts[u].sources[s].unassign();
 						}
+					}
+				}
+			} else if (sound->sources[s].oscType == OSC_TYPE_DEXED) {
+				for (int u = 0; u < sound->numUnison; u++) {
+					if (unisonParts[u].sources[s].dxVoice) {
+						unisonParts[u].sources[s].dxVoice->keyup();
 					}
 				}
 			}
@@ -2173,9 +2180,30 @@ dontUseCache : {}
 			}
 		}
 #endif
+		else if (sound->sources[s].oscType == OSC_TYPE_DEXED) {
+			static int32_t uniBuf[128];
+			memset(uniBuf, 0, sizeof uniBuf);
+
+			// TODO: 1. use existing int log function?
+			//       2. going from phase to logs (and then let MSFA turn those logs into phase again) is sus af
+			//         rework MSFA to use our phase incerements directly?
+			int logpitch = (int)(log2f(phaseIncrement)*(1<<24));
+			int adjpitch = logpitch - 278023814;
+
+			Dx7Patch *patch = sound->sources[s].dx7Patch;
+			if (!patch) patch = &Dexed::globalPatch;
+			// TODO: rework the "pb" param of compute to work like adjpitch
+			unisonParts[u].sources[s].dxVoice->updateBasePitches(adjpitch);
+			unisonParts[u].sources[s].dxVoice->compute(uniBuf, numSamples, 0, patch);
+
+			int32_t sourceAmplitudeNow = sourceAmplitude;
+			for (int i = 0; i < numSamples; i++) {
+				sourceAmplitudeNow += amplitudeIncrement;
+				oscBuffer[i] +=  multiply_32x32_rshift32(uniBuf[i], sourceAmplitudeNow) << 8;
+			}
 
 		// Or regular wave
-		else {
+		} else {
 			uint32_t oscSyncPosThisUnison;
 			uint32_t oscSyncPhaseIncrementsThisUnison;
 			uint32_t oscRetriggerPhase =

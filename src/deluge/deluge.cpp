@@ -26,6 +26,7 @@
 #include "modulation/params/param_manager.h"
 #include "gui/ui/browser/sample_browser.h"
 #include "RZA1/system/iodefine.h"
+#include "dexed/engine.h"
 
 #include <stdlib.h>
 #include <new>
@@ -558,6 +559,8 @@ extern "C" int deluge_main(void) {
 #if AUTOMATED_TESTER_ENABLED
 	AutomatedTester::init();
 #endif
+
+	Dexed::init();
 
 	currentPlaybackMode = &session;
 

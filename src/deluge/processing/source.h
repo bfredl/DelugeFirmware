@@ -26,6 +26,7 @@ class Sound;
 class ParamManagerForTimeline;
 class WaveTable;
 class SampleHolder;
+class Dx7Patch;
 
 class Source {
 public:
@@ -42,6 +43,8 @@ public:
 	PhaseIncrementFineTuner fineTuner;
 
 	MultiRangeArray ranges;
+
+	Dx7Patch *dx7Patch;
 
 	uint8_t repeatMode;
 

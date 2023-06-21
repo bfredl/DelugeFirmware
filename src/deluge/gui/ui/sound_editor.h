@@ -141,4 +141,7 @@ private:
 
 extern SoundEditor soundEditor;
 
+extern UI *dexedUI;
+extern Source *dexedEditedSource;
+
 #endif // SOUNDEDITOR_H

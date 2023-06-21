@@ -26,14 +26,17 @@
 #include "memory/general_memory_allocator.h"
 #include "playback/playback_handler.h"
 #include "model/song/song.h"
+#include "dexed/engine.h"
+#include "dexed/dx7note.h"
 
 VoiceUnisonPartSource::VoiceUnisonPartSource() {
 	voiceSample = NULL;
 	livePitchShifter = NULL;
+	dxVoice = NULL;
 }
 
 bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlaybackGuide* guide, uint32_t samplesLate,
-                                   uint32_t oscRetriggerPhase, bool resetEverything, uint8_t synthMode) {
+                                   uint32_t oscRetriggerPhase, bool resetEverything, uint8_t synthMode, uint8_t velocity) {
 
 	if (synthMode != SYNTH_MODE_FM && source->oscType == OSC_TYPE_SAMPLE) {
 
@@ -55,6 +58,21 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 	        || source->oscType == OSC_TYPE_INPUT_R || source->oscType == OSC_TYPE_INPUT_STEREO)) {
 		//oscPos = 0;
 	}
+	else if(synthMode != SYNTH_MODE_FM && source->oscType == OSC_TYPE_DEXED) {
+		if (!dxVoice) { // We might actually already have one, and just be restarting this voice
+			dxVoice = Dexed::solicitDxVoice();
+			if (!dxVoice) return false;
+		}
+
+		// TODO: this is no longer actually used, but we need to supply a value here for now
+		const int base = 50857777;  // (1 << 24) * (log(440) / log(2) - 69/12)
+		const int step = (1 << 24) / 12;
+		int freq = base + step * voice->noteCodeAfterArpeggiation;
+		Dx7Patch *patch = source->dx7Patch;
+		// globalPatch is copied as soon as we make changes
+		if (!patch) patch = &Dexed::globalPatch;
+		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, freq, velocity);
+	}
 	else {
 		if (oscRetriggerPhase != 0xFFFFFFFF) oscPos = getOscInitialPhaseForZero(source->oscType) + oscRetriggerPhase;
 	}
@@ -70,6 +88,11 @@ void VoiceUnisonPartSource::unassign() {
 		voiceSample->beenUnassigned();
 		AudioEngine::voiceSampleUnassigned(voiceSample);
 		voiceSample = NULL;
+	}
+
+	if (dxVoice) {
+		Dexed::dxVoiceUnassigned(dxVoice);
+		dxVoice = NULL;
 	}
 
 	if (livePitchShifter) {

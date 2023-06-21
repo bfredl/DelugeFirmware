@@ -52,6 +52,7 @@
 #include "hid/led/indicator_leds.h"
 #include "storage/flash_storage.h"
 #include "modulation/patch/patch_cable_set.h"
+#include "dexed/engine.h"
 
 extern "C" {
 #include "RZA1/mtu/mtu.h"
@@ -1867,6 +1868,12 @@ void Sound::render(ModelStackWithThreeMainThings* modelStack, StereoSample* outp
 		sourcesChanged |= anyChange << PATCH_SOURCE_LFO_GLOBAL;
 	}
 
+	for (int s = 0; s < NUM_SOURCES; s++) {
+		if (sources[s].oscType == OSC_TYPE_DEXED and sources[s].dx7Patch) {
+			sources[s].dx7Patch->computeLfo(numSamples);
+		}
+	}
+
 	// Do compressor
 	if (paramManager->getPatchCableSet()->isSourcePatchedToSomething(PATCH_SOURCE_COMPRESSOR)) {
 		if (sideChainHitPending) {
@@ -2800,6 +2807,10 @@ int Sound::readSourceFromFile(int s, ParamManagerForTimeline* paramManager, int3
 			source->sampleControls.reversed = storageManager.readTagOrAttributeValueInt();
 			storageManager.exitTag("reversed");
 		}
+		else if (!strcmp(tagName, "dx7patch")) {
+			Dexed::readDxPatch(&source->dx7Patch);
+			storageManager.exitTag("dx7patch");
+		}
 		/*
 		else if (!strcmp(tagName, "sampleSync")) {
 			source->sampleSync = stringToBool(storageManager.readTagContents());
@@ -3106,9 +3117,13 @@ void Sound::writeSourceToFile(int s, char const* tagName) {
 			else {
 				goto justCloseTag;
 			}
-		}
-
-		else {
+		} else if (source->oscType == OSC_TYPE_DEXED
+	    && synthMode != SYNTH_MODE_FM) { // Don't combine this with the above "if" - there's an "else" below
+			if (source->dx7Patch) {
+				Dexed::writeDxPatch(source->dx7Patch);
+			}
+			goto justCloseTag;
+		} else {
 justCloseTag:
 			storageManager.closeTag();
 		}
