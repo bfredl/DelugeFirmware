@@ -26,6 +26,7 @@
 #include <ParamManager.h>
 #include <samplebrowser.h>
 #include "iodefine.h"
+#include "dexed/engine.h"
 
 #include <stdlib.h>
 #include <new>
@@ -597,6 +598,8 @@ extern "C" int main2(void) {
 #if AUTOMATED_TESTER_ENABLED
 	AutomatedTester::init();
 #endif
+
+	Dexed::init();
 
 	currentPlaybackMode = &session;
 
