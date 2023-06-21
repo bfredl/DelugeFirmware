@@ -48,6 +48,7 @@
 #include "PatchCableSet.h"
 #include "InstrumentClip.h"
 #include "FlashStorage.h"
+#include "dexed/engine.h"
 
 extern "C" {
 #include "ssi_all_cpus.h"
@@ -2173,9 +2174,12 @@ dontUseCache : {}
 			}
 		}
 #endif
+		else if (sound->sources[s].oscType == OSC_TYPE_DEXED) {
+			// TODO: render to a separate buffer to ungain it
+			unisonParts[u].sources[s].dxVoice->compute(oscBuffer, numSamples, 0, 0, 0, &Dexed::dummy_controller);
 
 		// Or regular wave
-		else {
+		} else {
 			uint32_t oscSyncPosThisUnison;
 			uint32_t oscSyncPhaseIncrementsThisUnison;
 			uint32_t oscRetriggerPhase =

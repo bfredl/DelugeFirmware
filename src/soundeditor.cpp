@@ -604,11 +604,13 @@ public:
 
 		if (oldValue == OSC_TYPE_INPUT_L || oldValue == OSC_TYPE_INPUT_R || oldValue == OSC_TYPE_INPUT_STEREO
 		    || oldValue == OSC_TYPE_SAMPLE
+		    || oldValue == OSC_TYPE_DEXED
 		    || oldValue
 		           == OSC_TYPE_WAVETABLE // Haven't actually really determined if this needs to be here - maybe not?
 
 		    || newValue == OSC_TYPE_INPUT_L || newValue == OSC_TYPE_INPUT_R || newValue == OSC_TYPE_INPUT_STEREO
 		    || newValue == OSC_TYPE_SAMPLE
+		    || newValue == OSC_TYPE_DEXED
 		    || newValue
 		           == OSC_TYPE_WAVETABLE) { // Haven't actually really determined if this needs to be here - maybe not?
 			soundEditor.currentSound->unassignAllVoices();
@@ -624,15 +626,15 @@ public:
 #if HAVE_OLED
 		static char inLText[] = "Input (left)";
 		static char const* options[] = {"SINE",  "TRIANGLE",      "SQUARE",         "Analog square",
-		                                "Saw",   "Analog saw",    "Wavetable",      "SAMPLE",
-		                                inLText, "Input (right)", "Input (stereo)", NULL};
+		                                "Saw",   "Analog saw",    "Wavetable",      "SAMPLE", "DX7",
+		                                inLText, "Input (right)", "Input (stereo)",  NULL};
 		inLText[5] =
 		    ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn || DELUGE_MODEL == DELUGE_MODEL_40_PAD)) ? ' '
 		                                                                                                         : 0;
 #else
 		static char inLText[4] = "INL";
 		static char const* options[] = {"SINE",      "TRIANGLE", "SQUARE", "ASQUARE", "SAW", "ASAW",
-		                                "Wavetable", "SAMPLE",   inLText,  "INR",     "INLR"};
+		                                "Wavetable", "SAMPLE",   "DX7", inLText,  "INR",     "INLR"};
 		inLText[2] =
 		    ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn || DELUGE_MODEL == DELUGE_MODEL_40_PAD)) ? 'L'
 		                                                                                                         : 0;

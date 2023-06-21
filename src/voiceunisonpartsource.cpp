@@ -26,10 +26,13 @@
 #include "GeneralMemoryAllocator.h"
 #include "playbackhandler.h"
 #include "song.h"
+#include "dexed/engine.h"
+#include "dexed/dx7note.h"
 
 VoiceUnisonPartSource::VoiceUnisonPartSource() {
 	voiceSample = NULL;
 	livePitchShifter = NULL;
+	dxVoice = NULL;
 }
 
 bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlaybackGuide* guide, uint32_t samplesLate,
@@ -55,6 +58,18 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 	        || source->oscType == OSC_TYPE_INPUT_R || source->oscType == OSC_TYPE_INPUT_STEREO)) {
 		//oscPos = 0;
 	}
+	else if(synthMode != SYNTH_MODE_FM && source->oscType == OSC_TYPE_DEXED) {
+		if (!dxVoice) { // We might actually already have one, and just be restarting this voice
+			dxVoice = Dexed::solicitDxVoice();
+			if (!dxVoice) return false;
+		}
+		// TODO: get initial freq from mod matrix, velocity
+		const int base = 50857777;  // (1 << 24) * (log(440) / log(2) - 69/12)
+		const int step = (1 << 24) / 12;
+		int freq = base + step * voice->noteCodeAfterArpeggiation;
+		dxVoice->init(Dexed::globalPatch, voice->noteCodeAfterArpeggiation, freq, 64);
+
+	}
 	else {
 		if (oscRetriggerPhase != 0xFFFFFFFF) oscPos = getOscInitialPhaseForZero(source->oscType) + oscRetriggerPhase;
 	}
@@ -70,6 +85,11 @@ void VoiceUnisonPartSource::unassign() {
 		voiceSample->beenUnassigned();
 		AudioEngine::voiceSampleUnassigned(voiceSample);
 		voiceSample = NULL;
+	}
+
+	if (dxVoice) {
+		Dexed::dxVoiceUnassigned(dxVoice);
+		dxVoice = NULL;
 	}
 
 	if (livePitchShifter) {

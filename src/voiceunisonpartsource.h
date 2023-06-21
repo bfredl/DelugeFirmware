@@ -28,6 +28,7 @@ class Source;
 class Voice;
 class VoiceSample;
 class LivePitchShifter;
+class Dx7Note;
 
 class VoiceUnisonPartSource {
 public:
@@ -46,6 +47,7 @@ public:
 	bool active;
 	VoiceSample* voiceSample;
 	LivePitchShifter* livePitchShifter;
+	Dx7Note* dxVoice;
 };
 
 #endif
