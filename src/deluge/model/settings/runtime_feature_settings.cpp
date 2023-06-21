@@ -164,6 +164,10 @@ void RuntimeFeatureSettings::init() {
 	SetupOnOffSetting(settings[RuntimeFeatureSettingType::EnableGrainFX],
 	                  deluge::l10n::getView(STRING_FOR_COMMUNITY_FEATURE_GRAIN_FX), "enableGrainFX",
 	                  RuntimeFeatureStateToggle::Off);
+	// EnableGrainFX
+	SetupOnOffSetting(settings[RuntimeFeatureSettingType::EnableDxShortcuts],
+	                  deluge::l10n::getView(STRING_FOR_COMMUNITY_FEATURE_DX_SHORTCUTS), "enableDxShortcuts",
+	                  RuntimeFeatureStateToggle::Off);
 
 	// EmulatedDisplay
 	SetupEmulatedDisplaySetting(settings[RuntimeFeatureSettingType::EmulatedDisplay], "Emulated Display",

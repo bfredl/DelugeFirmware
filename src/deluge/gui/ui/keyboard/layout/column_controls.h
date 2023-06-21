@@ -22,6 +22,7 @@
 #include "gui/ui/keyboard/column_controls/mod.h"
 #include "gui/ui/keyboard/column_controls/scale_mode.h"
 #include "gui/ui/keyboard/column_controls/velocity.h"
+#include "gui/ui/keyboard/column_controls/dx.h"
 #include "gui/ui/keyboard/layout.h"
 
 namespace deluge::gui::ui::keyboard::layout {
@@ -38,6 +39,7 @@ enum ColumnControlFunction : int8_t {
 	CHORD,
 	CHORD_MEM,
 	SCALE_MODE,
+	DX,
 	// BEAT_REPEAT,
 	COL_CTRL_FUNC_MAX,
 };
@@ -83,6 +85,8 @@ public:
 
 	virtual void renderSidebarPads(RGB image[][kDisplayWidth + kSideBarWidth]) override;
 
+	void checkNewInstrument(Instrument *newInstrument) override;
+
 	VelocityColumn velocityColumn{velocity};
 
 private:
@@ -90,11 +94,13 @@ private:
 	ChordColumn chordColumn{};
 	ChordMemColumn chordMemColumn{};
 	ScaleModeColumn scaleModeColumn{};
+	DXColumn dxColumn{};
 
 	void renderColumnBeatRepeat(RGB image[][kDisplayWidth + kSideBarWidth], int32_t column);
 
 	ColumnControlFunction leftColFunc = VELOCITY;
 	ColumnControlFunction rightColFunc = MOD;
+	bool rightColSetAtRuntime = false;
 	ControlColumn* leftColPrev = &velocityColumn;
 	ControlColumn* rightColPrev = &modColumn;
 	ControlColumn* leftCol = &velocityColumn;
