@@ -55,12 +55,16 @@
 #include "util/functions.h"
 #include <new>
 #include <string.h>
+#include "dexed/dexeditor.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
 }
 
 #include "menus.h"
+
+UI *dexedUI = NULL;
+Source *dexedEditedSource = NULL;
 
 using namespace deluge;
 using namespace deluge::gui;

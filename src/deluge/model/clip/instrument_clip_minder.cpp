@@ -160,7 +160,7 @@ void InstrumentClipMinder::drawMIDIControlNumber(int32_t controlNumber, bool aut
 	}
 }
 #pragma GCC pop
-void InstrumentClipMinder::createNewInstrument(OutputType newOutputType) {
+void InstrumentClipMinder::createNewInstrument(OutputType newOutputType, bool is_fm) {
 	int32_t error;
 
 	OutputType oldOutputType = getCurrentOutputType();
@@ -212,11 +212,15 @@ gotError:
 		display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_KIT_CREATED));
 	}
 	else {
+		if (is_fm) {
+		display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_FM_SYNTH_CREATED));
+		} else {
 		display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_SYNTH_CREATED));
+		}
 	}
 
 	if (newOutputType == OutputType::SYNTH) {
-		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager);
+		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager, is_fm);
 	}
 
 	char modelStackMemory[MODEL_STACK_MAX_SIZE];
@@ -435,7 +439,10 @@ yesLoadInstrument:
 	// Which-instrument-type buttons
 	else if (b == SYNTH) {
 		if (on && currentUIMode == UI_MODE_NONE) {
-			if (Buttons::isNewOrShiftButtonPressed()) {
+			if (Buttons::isButtonPressed(MOD2)) {  // FM
+				createNewInstrument(OutputType::SYNTH, true);
+			}
+			else if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(OutputType::SYNTH);
 			}
 			else {

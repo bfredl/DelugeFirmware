@@ -53,6 +53,7 @@ public:
 	void writeAttribute(char const* name, int32_t number, bool onNewLine = true);
 	void writeAttribute(char const* name, char const* value, bool onNewLine = true);
 	void writeAttributeHex(char const* name, int32_t number, int32_t numChars, bool onNewLine = true);
+	void writeAttributeHexBytes(char const* name, uint8_t *data, int32_t numBytes, bool onNewLine = true);
 	void writeTag(char const* tag, int32_t number);
 	void writeTag(char const* tag, char const* contents);
 	void writeOpeningTag(char const* tag, bool startNewLineAfter = true);
@@ -104,6 +105,7 @@ public:
 	int32_t tryReadingFirmwareTagFromFile(char const* tagName, bool ignoreIncorrectFirmware = false);
 	int32_t readTagOrAttributeValueInt();
 	int32_t readTagOrAttributeValueHex(int32_t errorValue);
+	int readTagOrAttributeValueHexBytes(uint8_t *bytes, int32_t maxLen);
 
 	int32_t readTagOrAttributeValueString(String* string);
 	int32_t checkSpaceOnCard();
@@ -154,6 +156,8 @@ private:
 	int32_t readAttributeValueString(String* string);
 	void restoreBackedUpCharIfNecessary();
 	void xmlReadDone();
+
+	int readHexBytesUntil(uint8_t *bytes, int32_t maxLen, char endPos);
 
 	int32_t writeBufferToFile();
 };

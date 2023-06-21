@@ -27,7 +27,13 @@ public:
 
 	[[nodiscard]] std::string_view getTitle() const override { return FormattedTitle::title(); }
 
-	bool isRelevant(Sound* sound, int32_t whichThing) override { return (sound->getSynthMode() == SynthMode::FM); }
+	bool isRelevant(Sound* sound, int32_t whichThing) override { return (sound->getSynthMode() == SynthMode::FM || sound->sources[whichThing].oscType == OscType::DEXED); }
+
+	int32_t getMinValue() const override {
+		// TODO: only for dx7!!!
+		return -50;
+	}
+
 };
 
 } // namespace deluge::gui::menu_item::osc::source

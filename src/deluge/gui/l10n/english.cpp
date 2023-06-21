@@ -323,6 +323,7 @@ PLACE_SDRAM_DATA Language english{
         {STRING_FOR_ANALOG_SQUARE, "Analog square"},
         {STRING_FOR_ANALOG_SAW, "Analog saw"},
         {STRING_FOR_SAMPLE, "Sample"},
+        {STRING_FOR_SAMPLE, "DX7"},
         {STRING_FOR_INPUT, "Input"},
         {STRING_FOR_INPUT_LEFT, "Input (left)"},
         {STRING_FOR_INPUT_RIGHT, "Input (right)"},
@@ -522,6 +523,7 @@ PLACE_SDRAM_DATA Language english{
         {STRING_FOR_DELETE_ALL_TRACKS_CLIPS_FIRST, "Delete all track's clips first"},
         {STRING_FOR_CANT_DELETE_FINAL_CLIP, "Can't delete final Clip"},
         {STRING_FOR_NEW_SYNTH_CREATED, "New synth created"},
+        {STRING_FOR_NEW_FM_SYNTH_CREATED, "New dx7 synth created"},
         {STRING_FOR_NEW_KIT_CREATED, "New kit created"},
 
         {STRING_FOR_CAN_ONLY_IMPORT_WHOLE_FOLDER_INTO_BRAND_NEW_KIT, "Can only import whole folder into brand-new kit"},

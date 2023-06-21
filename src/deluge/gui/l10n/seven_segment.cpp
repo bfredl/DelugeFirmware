@@ -163,6 +163,7 @@ PLACE_SDRAM_DATA Language seven_segment{
         {STRING_FOR_ANALOG_SQUARE, "ASQUARE"},
         {STRING_FOR_ANALOG_SAW, "ASAW"},
         {STRING_FOR_SAMPLE, "SAMP"},
+        {STRING_FOR_DX7, "DX7"},
         {STRING_FOR_INPUT, "IN"},
         {STRING_FOR_INPUT_LEFT, "INL"},
         {STRING_FOR_INPUT_RIGHT, "INR"},

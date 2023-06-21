@@ -26,12 +26,13 @@ class Source;
 class Voice;
 class VoiceSample;
 class LivePitchShifter;
+class Dx7Note;
 
 class VoiceUnisonPartSource {
 public:
 	VoiceUnisonPartSource();
 	bool noteOn(Voice* voice, Source* source, VoiceSamplePlaybackGuide* voiceSource, uint32_t samplesLate,
-	            uint32_t oscPhase, bool resetEverything, SynthMode synthMode);
+	            uint32_t oscPhase, bool resetEverything, SynthMode synthMode, uint8_t velocity);
 	void unassign();
 	bool getPitchAndSpeedParams(Source* source, VoiceSamplePlaybackGuide* voiceSource, uint32_t* phaseIncrement,
 	                            uint32_t* timeStretchRatio, uint32_t* noteLengthInSamples);
@@ -44,4 +45,5 @@ public:
 	bool active;
 	VoiceSample* voiceSample;
 	LivePitchShifter* livePitchShifter;
+	Dx7Note* dxVoice;
 };

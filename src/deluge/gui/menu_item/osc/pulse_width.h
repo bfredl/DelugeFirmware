@@ -48,7 +48,12 @@ public:
 		    >> 32);
 	}
 
-	bool isRelevant(Sound* sound, int32_t whichThing) override {
+	int32_t getMinValue() const {
+		// TODO: only if dx7 where this is changed to ratescale (or ampmod or what we end up with)
+		return -50;
+	}
+
+	bool isRelevant(Sound* sound, int whichThing) {
 		if (sound->getSynthMode() == SynthMode::FM) {
 			return false;
 		}
@@ -58,4 +63,4 @@ public:
 	}
 };
 
-} // namespace deluge::gui::menu_item::osc
+}
