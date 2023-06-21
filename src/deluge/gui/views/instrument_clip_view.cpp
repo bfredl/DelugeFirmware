@@ -455,7 +455,10 @@ doOther:
 			}
 
 			if (currentUIMode == UI_MODE_NONE) {
-				if (Buttons::isNewOrShiftButtonPressed()) {
+				if (Buttons::isButtonPressed(MOD7)) {
+					createNewInstrument(OutputType::SYNTH, true);
+				}
+				else if (Buttons::isNewOrShiftButtonPressed()) {
 					createNewInstrument(OutputType::SYNTH);
 				}
 				else {
@@ -1211,9 +1214,9 @@ void InstrumentClipView::doubleClipLengthAction() {
 	}
 }
 
-void InstrumentClipView::createNewInstrument(OutputType newOutputType) {
+void InstrumentClipView::createNewInstrument(OutputType newOutputType, bool is_fm) {
 
-	InstrumentClipMinder::createNewInstrument(newOutputType);
+	InstrumentClipMinder::createNewInstrument(newOutputType, is_fm);
 
 	recalculateColours();
 	uiNeedsRendering(this);

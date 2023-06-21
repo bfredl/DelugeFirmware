@@ -4,6 +4,7 @@
 #include "extern.h"
 #include "gui/l10n/strings.h"
 #include "gui/menu_item/menu_item.h"
+#include "gui/menu_item/dexed_param.h"
 #include "gui/ui/audio_recorder.h"
 #include "gui/ui/browser/sample_browser.h"
 #include "gui/ui/keyboard/keyboard_screen.h"
@@ -227,6 +228,13 @@ void SoundEditor::setLedStates() {
 	playbackHandler.setLedStates();
 }
 
+void SoundEditor::enterSubmenu(MenuItem* newItem) {
+	navigationDepth++;
+	menuItemNavigationRecord[navigationDepth] = newItem;
+	display->setNextTransitionDirection(1);
+	beginScreen();
+}
+
 ActionResult SoundEditor::buttonAction(deluge::hid::Button b, bool on, bool inCardRoutine) {
 	using namespace deluge::hid::button;
 
@@ -253,10 +261,7 @@ ActionResult SoundEditor::buttonAction(deluge::hid::Button b, bool on, bool inCa
 								newItem = &menu_item::multiRangeMenu;
 							}
 
-							navigationDepth++;
-							menuItemNavigationRecord[navigationDepth] = newItem;
-							display->setNextTransitionDirection(1);
-							beginScreen();
+							enterSubmenu(newItem);
 						}
 					}
 				}
@@ -858,6 +863,13 @@ ActionResult SoundEditor::potentialShortcutPadAction(int32_t x, int32_t y, bool 
 		}
 
 		else {
+
+			if (getCurrentUI() == &soundEditor && getCurrentMenuItem() == &dexedParam) {
+				// TODO: community setting
+				if (dexedParam.potentialShortcutPadAction(x, y, on)) {
+					return ActionResult::DEALT_WITH;
+				}
+			}
 			// Shortcut to edit a parameter
 			if (x < 14 || (x == 14 && y < 5)) {
 
@@ -904,6 +916,11 @@ doSetup:
 					int32_t thingIndex = x & 1;
 
 					bool setupSuccess = setup(getCurrentClip(), item, thingIndex);
+
+					if (!setupSuccess && item == &modulatorVolume && currentSource->oscType == OscType::DEXED) {
+						item = &dexedParam;
+						setupSuccess = setup(getCurrentClip(), item, thingIndex);
+					}
 
 					if (!setupSuccess) {
 						return ActionResult::DEALT_WITH;

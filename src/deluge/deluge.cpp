@@ -20,6 +20,7 @@
 #include "RZA1/system/iodefine.h"
 #include "definitions_cxx.hpp"
 #include "drivers/pic/pic.h"
+#include "dsp/dexed/engine.h"
 #include "dsp/stereo_sample.h"
 #include "gui/context_menu/audio_input_selector.h"
 #include "gui/context_menu/clear_song.h"

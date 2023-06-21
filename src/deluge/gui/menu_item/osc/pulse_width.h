@@ -48,7 +48,7 @@ public:
 		    >> 32);
 	}
 
-	bool isRelevant(Sound* sound, int32_t whichThing) override {
+	bool isRelevant(Sound* sound, int whichThing) {
 		if (sound->getSynthMode() == SynthMode::FM) {
 			return false;
 		}

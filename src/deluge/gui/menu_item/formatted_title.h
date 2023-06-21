@@ -1,5 +1,6 @@
 #pragma once
 #include "gui/l10n/l10n.h"
+#include "util/functions.h"
 #include <utility>
 
 namespace deluge::gui::menu_item {

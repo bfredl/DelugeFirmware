@@ -27,7 +27,9 @@ public:
 
 	[[nodiscard]] std::string_view getTitle() const override { return FormattedTitle::title(); }
 
-	bool isRelevant(Sound* sound, int32_t whichThing) override { return (sound->getSynthMode() == SynthMode::FM); }
+	bool isRelevant(Sound* sound, int32_t whichThing) override {
+		return (sound->getSynthMode() == SynthMode::FM || sound->sources[whichThing].oscType == OscType::DEXED);
+	}
 };
 
 } // namespace deluge::gui::menu_item::osc::source

@@ -17,6 +17,7 @@
 
 #include "processing/sound/sound.h"
 #include "definitions_cxx.hpp"
+#include "dsp/dexed/engine.h"
 #include "gui/l10n/l10n.h"
 #include "gui/ui/root_ui.h"
 #include "gui/ui/sound_editor.h"
@@ -54,9 +55,6 @@
 #include "storage/storage_manager.h"
 #include "util/functions.h"
 #include "util/misc.h"
-#include <math.h>
-#include <new>
-#include <string.h>
 
 namespace params = deluge::modulation::params;
 
@@ -327,7 +325,7 @@ void Sound::setupDefaultExpressionPatching(ParamManager* paramManager) {
 	}
 }
 
-void Sound::setupAsBlankSynth(ParamManager* paramManager) {
+void Sound::setupAsBlankSynth(ParamManager* paramManager, bool is_fm) {
 
 	PatchedParamSet* patchedParams = paramManager->getPatchedParamSet();
 	patchedParams->params[params::LOCAL_OSC_B_VOLUME].setCurrentValueBasicForSetup(-2147483648);
@@ -337,11 +335,23 @@ void Sound::setupAsBlankSynth(ParamManager* paramManager) {
 	patchedParams->params[params::LOCAL_ENV_0_DECAY].setCurrentValueBasicForSetup(
 	    getParamFromUserValue(params::LOCAL_ENV_0_DECAY, 20));
 	patchedParams->params[params::LOCAL_ENV_0_SUSTAIN].setCurrentValueBasicForSetup(2147483647);
-	patchedParams->params[params::LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
+	if (is_fm) {
+		sources[0].oscType = OscType::DEXED;
+		sources[0].ensureDx7Patch(); // initializes Dexed engine if this is the first dx7patch
+		// adjust back up for real quiet patches..
+		patchedParams->params[params::LOCAL_OSC_A_VOLUME].setCurrentValueBasicForSetup(1288490188); // 40 ish
+		paramManager->getPatchCableSet()->numPatchCables =
+		    0; // velocity is forwarded to dx7 engine, don't do master volume
+		// TODO: this could be set to "infinity" if we use the DX7 envs to figure out when a voice is gone silent
+		patchedParams->params[params::LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(429496729); // 30 ish
+	}
+	else {
+		patchedParams->params[params::LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
 
-	paramManager->getPatchCableSet()->numPatchCables = 1;
-	paramManager->getPatchCableSet()->patchCables[0].setup(PatchSource::VELOCITY, params::LOCAL_VOLUME,
-	                                                       getParamFromUserValue(params::PATCH_CABLE, 50));
+		paramManager->getPatchCableSet()->numPatchCables = 1;
+		paramManager->getPatchCableSet()->patchCables[0].setup(PatchSource::VELOCITY, params::LOCAL_VOLUME,
+		                                                       getParamFromUserValue(params::PATCH_CABLE, 50));
+	}
 
 	setupDefaultExpressionPatching(paramManager);
 
@@ -2080,6 +2090,12 @@ void Sound::render(ModelStackWithThreeMainThings* modelStack, StereoSample* outp
 		sourcesChanged |= anyChange << patchSourceLFOGlobalUnderlying;
 	}
 
+	for (int s = 0; s < kNumSources; s++) {
+		if (sources[s].oscType == OscType::DEXED and sources[s].dx7Patch) {
+			sources[s].dx7Patch->computeLfo(numSamples);
+		}
+	}
+
 	// Do compressor
 	if (paramManager->getPatchCableSet()->isSourcePatchedToSomething(PatchSource::COMPRESSOR)) {
 		if (sideChainHitPending) {
@@ -3116,6 +3132,22 @@ int32_t Sound::readSourceFromFile(int32_t s, ParamManagerForTimeline* paramManag
 			source->sampleControls.reversed = storageManager.readTagOrAttributeValueInt();
 			storageManager.exitTag("reversed");
 		}
+		else if (!strcmp(tagName, "dx7patch")) {
+			Dx7Patch* patch = source->ensureDx7Patch();
+			storageManager.readTagOrAttributeValueHexBytes(patch->currentPatch, 155);
+			storageManager.exitTag("dx7patch");
+		}
+		else if (!strcmp(tagName, "dx7opswitch")) {
+			Dx7Patch* patch = source->ensureDx7Patch();
+			const char* str = storageManager.readTagOrAttributeValue();
+			strncpy(patch->opSwitch, str, 7);
+			storageManager.exitTag("dx7opswitch");
+		}
+		else if (!strcmp(tagName, "dx7randomdetune")) {
+			Dx7Patch* patch = source->ensureDx7Patch();
+			patch->random_detune = storageManager.readTagOrAttributeValueInt();
+			storageManager.exitTag("dx7randomdetune");
+		}
 		/*
 		else if (!strcmp(tagName, "sampleSync")) {
 		    source->sampleSync = stringToBool(storageManager.readTagContents());
@@ -3445,7 +3477,20 @@ void Sound::writeSourceToFile(int32_t s, char const* tagName) {
 				goto justCloseTag;
 			}
 		}
-
+		else if (source->oscType == OscType::DEXED
+		         && synthMode != SynthMode::FM) { // Don't combine this with the above "if" - there's an "else" below
+			if (source->dx7Patch) {
+				Dx7Patch* patch = source->dx7Patch;
+				storageManager.writeAttributeHexBytes("dx7patch", patch->currentPatch, 155);
+				// TODO: according to dx7 manual, this is just parameter number 155 ??????
+				storageManager.writeAttribute("dx7opswitch", patch->opSwitch);
+				// real extension:
+				if (patch->random_detune != 0) {
+					storageManager.writeAttribute("dx7randomdetune", patch->random_detune);
+				}
+			}
+			goto justCloseTag;
+		}
 		else {
 justCloseTag:
 			storageManager.closeTag();

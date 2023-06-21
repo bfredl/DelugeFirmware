@@ -448,6 +448,7 @@ enum class OscType {
 	ANALOG_SAW_2,
 	WAVETABLE,
 	SAMPLE,
+	DEXED,
 	INPUT_L,
 	INPUT_R,
 	INPUT_STEREO,

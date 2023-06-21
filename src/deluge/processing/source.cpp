@@ -17,6 +17,7 @@
 
 #include "processing/source.h"
 #include "definitions_cxx.hpp"
+#include "dsp/dexed/engine.h"
 #include "gui/ui/browser/sample_browser.h"
 #include "gui/ui/sound_editor.h"
 #include "gui/views/view.h"
@@ -47,6 +48,7 @@ Source::Source() {
 	timeStretchAmount = 0;
 
 	defaultRangeI = -1;
+	dx7Patch = NULL;
 }
 
 Source::~Source() {
@@ -290,6 +292,13 @@ doChangeType:
 
 	oscType = newType;
 }
+
+Dx7Patch* Source::ensureDx7Patch() {
+	if (dx7Patch == nullptr) {
+		dx7Patch = Dexed::newPatch();
+	}
+	return dx7Patch;
+};
 
 /*
     for (int32_t e = 0; e < ranges.getNumElements(); e++) {
