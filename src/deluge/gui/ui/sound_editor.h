@@ -120,6 +120,7 @@ public:
 	bool setupKitGlobalFXMenu;
 	void exitCompletely();
 	void goUpOneLevel();
+	void enterSubmenu(MenuItem* newItem);
 	bool pcReceivedForMidiLearn(MIDIDevice* fromDevice, int32_t channel, int32_t program);
 	bool noteOnReceivedForMidiLearn(MIDIDevice* fromDevice, int32_t channel, int32_t note, int32_t velocity);
 	void markInstrumentAsEdited();
