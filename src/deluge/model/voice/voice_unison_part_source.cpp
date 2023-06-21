@@ -16,6 +16,8 @@
  */
 
 #include "model/voice/voice_unison_part_source.h"
+#include "dsp/dexed/dx7note.h"
+#include "dsp/dexed/engine.h"
 #include "memory/general_memory_allocator.h"
 #include "model/sample/sample_cache.h"
 #include "model/song/song.h"
@@ -29,10 +31,12 @@
 VoiceUnisonPartSource::VoiceUnisonPartSource() {
 	voiceSample = NULL;
 	livePitchShifter = NULL;
+	dxVoice = NULL;
 }
 
 bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlaybackGuide* guide, uint32_t samplesLate,
-                                   uint32_t oscRetriggerPhase, bool resetEverything, SynthMode synthMode) {
+                                   uint32_t oscRetriggerPhase, bool resetEverything, SynthMode synthMode,
+                                   uint8_t velocity) {
 
 	if (synthMode != SynthMode::FM && source->oscType == OscType::SAMPLE) {
 
@@ -66,6 +70,22 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 	        || source->oscType == OscType::INPUT_R || source->oscType == OscType::INPUT_STEREO)) {
 		// oscPos = 0;
 	}
+	else if (synthMode != SynthMode::FM && source->oscType == OscType::DX7) {
+		if (!dxVoice) { // We might actually already have one, and just be restarting this voice
+			dxVoice = getDxEngine()->solicitDxVoice();
+			if (!dxVoice)
+				return false;
+		}
+
+		// TODO: this is not used for the base pitch, but it is used for calculating the detune ratios.
+		// We might want to base that on note+transpose+masterTranspose, or more likely, completely
+		// change over how "detune" is calculated (post-LUT)
+		const int base = 50857777; // (1 << 24) * (log(440) / log(2) - 69/12)
+		const int step = (1 << 24) / 12;
+		int freq = base + step * voice->noteCodeAfterArpeggiation;
+		DxPatch* patch = source->ensureDxPatch();
+		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, freq, velocity);
+	}
 	else {
 		if (oscRetriggerPhase != 0xFFFFFFFF) {
 			oscPos = getOscInitialPhaseForZero(source->oscType) + oscRetriggerPhase;
@@ -85,6 +105,11 @@ void VoiceUnisonPartSource::unassign(bool deletingSong) {
 		voiceSample->beenUnassigned(deletingSong);
 		AudioEngine::voiceSampleUnassigned(voiceSample);
 		voiceSample = NULL;
+	}
+
+	if (dxVoice) {
+		dxEngine->dxVoiceUnassigned(dxVoice);
+		dxVoice = NULL;
 	}
 
 	if (livePitchShifter) {

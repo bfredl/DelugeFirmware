@@ -3,6 +3,7 @@
 #include "definitions_cxx.hpp"
 #include "extern.h"
 #include "gui/l10n/strings.h"
+#include "gui/menu_item/dx/param.h"
 #include "gui/menu_item/file_selector.h"
 #include "gui/menu_item/menu_item.h"
 #include "gui/menu_item/mpe/zone_num_member_channels.h"
@@ -225,6 +226,13 @@ void SoundEditor::setLedStates() {
 	}
 }
 
+void SoundEditor::enterSubmenu(MenuItem* newItem) {
+	navigationDepth++;
+	menuItemNavigationRecord[navigationDepth] = newItem;
+	display->setNextTransitionDirection(1);
+	beginScreen();
+}
+
 ActionResult SoundEditor::buttonAction(deluge::hid::Button b, bool on, bool inCardRoutine) {
 	using namespace deluge::hid::button;
 
@@ -251,10 +259,7 @@ ActionResult SoundEditor::buttonAction(deluge::hid::Button b, bool on, bool inCa
 								newItem = &menu_item::multiRangeMenu;
 							}
 
-							navigationDepth++;
-							menuItemNavigationRecord[navigationDepth] = newItem;
-							display->setNextTransitionDirection(1);
-							beginScreen();
+							enterSubmenu(newItem);
 						}
 					}
 				}
@@ -858,6 +863,13 @@ ActionResult SoundEditor::potentialShortcutPadAction(int32_t x, int32_t y, bool 
 		}
 
 		else {
+
+			if (getCurrentUI() == &soundEditor && getCurrentMenuItem() == &dxParam) {
+				// TODO: community setting
+				if (dxParam.potentialShortcutPadAction(x, y, on)) {
+					return ActionResult::DEALT_WITH;
+				}
+			}
 			// Shortcut to edit a parameter
 			if (x < 14 || (x == 14 && y < 5)) {
 
@@ -904,6 +916,11 @@ doSetup:
 					int32_t thingIndex = x & 1;
 
 					bool setupSuccess = setup(getCurrentClip(), item, thingIndex);
+
+					if (!setupSuccess && item == &modulatorVolume && currentSource->oscType == OscType::DX7) {
+						item = &dxParam;
+						setupSuccess = setup(getCurrentClip(), item, thingIndex);
+					}
 
 					if (!setupSuccess) {
 						return ActionResult::DEALT_WITH;
@@ -1029,10 +1046,8 @@ ActionResult SoundEditor::padAction(int32_t x, int32_t y, int32_t on) {
 	}
 
 	if (getRootUI() == &keyboardScreen) {
-		if (x < kDisplayWidth) {
-			keyboardScreen.padAction(x, y, on);
-			return ActionResult::DEALT_WITH;
-		}
+		keyboardScreen.padAction(x, y, on);
+		return ActionResult::DEALT_WITH;
 	}
 
 	// Audition pads

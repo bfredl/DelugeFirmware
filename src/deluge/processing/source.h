@@ -26,6 +26,7 @@ class Sound;
 class ParamManagerForTimeline;
 class WaveTable;
 class SampleHolder;
+class DxPatch;
 
 class Source {
 public:
@@ -43,6 +44,7 @@ public:
 
 	MultiRangeArray ranges;
 
+	DxPatch* dxPatch;
 	SampleRepeatMode repeatMode;
 
 	int8_t timeStretchAmount;
@@ -63,6 +65,8 @@ public:
 	void doneReadingFromFile(Sound* sound);
 	bool hasAnyLoopEndPoint();
 	void setOscType(OscType newType);
+
+	DxPatch* ensureDxPatch();
 
 private:
 	void destructAllMultiRanges();
