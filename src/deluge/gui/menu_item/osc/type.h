@@ -18,12 +18,15 @@
 #include "definitions_cxx.hpp"
 #include "gui/menu_item/formatted_title.h"
 #include "gui/menu_item/selection.h"
+#include "gui/menu_item/submenu.h"
 #include "gui/ui/sound_editor.h"
 #include "model/song/song.h"
 #include "processing/engines/audio_engine.h"
 #include "processing/sound/sound.h"
 #include "processing/source.h"
 #include "util/comparison.h"
+
+extern deluge::gui::menu_item::Submenu dexedMenu;
 
 namespace deluge::gui::menu_item::osc {
 class Type final : public Selection, public FormattedTitle {
@@ -42,6 +45,7 @@ public:
 		    OscType::INPUT_R,
 		    OscType::INPUT_STEREO,
 		    OscType::SAMPLE,
+		    OscType::DEXED,
 
 		    // Haven't actually really determined if this needs to be here - maybe not?
 		    OscType::WAVETABLE,
@@ -70,11 +74,12 @@ public:
 		    l10n::getView(STRING_FOR_ANALOG_SAW),    //<
 		    l10n::getView(STRING_FOR_WAVETABLE),     //<
 		    l10n::getView(STRING_FOR_SAMPLE),        //<
+		    l10n::getView(STRING_FOR_DX7),           //<
 		    l10n::getView(STRING_FOR_INPUT_LEFT),    //<
 		    l10n::getView(STRING_FOR_INPUT_RIGHT),   //<
 		    l10n::getView(STRING_FOR_INPUT_STEREO),  //<
 		};
-		options[8] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) //<
+		options[9] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) //<
 		                 ? l10n::getView(STRING_FOR_INPUT_LEFT)
 		                 : l10n::getView(STRING_FOR_INPUT);
 
@@ -90,6 +95,13 @@ public:
 	bool isRelevant(ModControllableAudio* modControllable, int32_t whichThing) override {
 		Sound* sound = static_cast<Sound*>(modControllable);
 		return (sound->getSynthMode() != SynthMode::FM);
+	}
+
+	MenuItem* selectButtonPress() final {
+		if (soundEditor.currentSource->oscType != OscType::DEXED) {
+			return NULL;
+		}
+		return (MenuItem*)&dexedMenu;
 	}
 };
 

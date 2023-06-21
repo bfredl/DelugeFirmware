@@ -20,6 +20,7 @@
 #include "gui/l10n/l10n.h"
 #include "gui/ui/keyboard/keyboard_screen.h"
 #include "gui/ui/load/load_instrument_preset_ui.h"
+#include "gui/ui/menus.h"
 #include "gui/ui/save/save_instrument_preset_ui.h"
 #include "gui/ui/sound_editor.h"
 #include "gui/views/arranger_view.h"
@@ -151,7 +152,7 @@ void InstrumentClipMinder::drawMIDIControlNumber(int32_t controlNumber, bool aut
 	}
 }
 #pragma GCC pop
-void InstrumentClipMinder::createNewInstrument(OutputType newOutputType) {
+void InstrumentClipMinder::createNewInstrument(OutputType newOutputType, bool is_fm) {
 	int32_t error;
 
 	OutputType oldOutputType = getCurrentOutputType();
@@ -203,11 +204,16 @@ gotError:
 		display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_KIT_CREATED));
 	}
 	else {
-		display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_SYNTH_CREATED));
+		if (is_fm) {
+			display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_FM_SYNTH_CREATED));
+		}
+		else {
+			display->consoleText(deluge::l10n::get(deluge::l10n::String::STRING_FOR_NEW_SYNTH_CREATED));
+		}
 	}
 
 	if (newOutputType == OutputType::SYNTH) {
-		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager);
+		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager, is_fm);
 	}
 
 	char modelStackMemory[MODEL_STACK_MAX_SIZE];
@@ -254,6 +260,11 @@ gotError:
 	setLedStates();
 
 	newInstrument->name.set(&newName);
+
+	if (is_fm) {
+		soundEditor.setup(getCurrentInstrumentClip(), &dexedMenu, 0);
+		openUI(&soundEditor);
+	}
 
 	if (display->haveOLED()) {
 		renderUIsForOled();
@@ -421,7 +432,10 @@ yesLoadInstrument:
 	// Which-instrument-type buttons
 	else if (b == SYNTH) {
 		if (on && currentUIMode == UI_MODE_NONE) {
-			if (Buttons::isNewOrShiftButtonPressed()) {
+			if (Buttons::isButtonPressed(MOD7)) { // FM
+				createNewInstrument(OutputType::SYNTH, true);
+			}
+			else if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(OutputType::SYNTH);
 			}
 			else {
