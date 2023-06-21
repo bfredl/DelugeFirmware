@@ -19,6 +19,7 @@
 #include "NE10.h"
 #include "RZA1/system/iodefine.h"
 #include "definitions_cxx.hpp"
+#include "dexed/engine.h"
 #include "drivers/pic/pic.h"
 #include "dsp/stereo_sample.h"
 #include "gui/context_menu/audio_input_selector.h"
@@ -535,6 +536,8 @@ extern "C" int32_t deluge_main(void) {
 #if AUTOMATED_TESTER_ENABLED
 	AutomatedTester::init();
 #endif
+
+	Dexed::init();
 
 	currentPlaybackMode = &session;
 

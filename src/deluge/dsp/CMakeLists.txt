@@ -3,6 +3,9 @@ file (GLOB_RECURSE deluge_dsp_SOURCES
   CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_LIST_DIR}/*.c
   ${CMAKE_CURRENT_LIST_DIR}/*.cpp
+  # TODO: move the DSP part of dexed here!
+  ${CMAKE_CURRENT_LIST_DIR}/../../dexed/*.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/../../dexed/*.s
 )
 
 add_library(deluge_dsp STATIC ${deluge_dsp_SOURCES})

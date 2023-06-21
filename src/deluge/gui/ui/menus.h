@@ -29,6 +29,7 @@ extern deluge::gui::menu_item::sample::End sampleEndMenu;
 extern deluge::gui::menu_item::audio_clip::SampleMarkerEditor audioClipSampleMarkerEditorMenuStart;
 extern deluge::gui::menu_item::audio_clip::SampleMarkerEditor audioClipSampleMarkerEditorMenuEnd;
 extern DrumName drumNameMenu;
+extern deluge::gui::menu_item::Submenu dexedMenu;
 
 extern deluge::gui::menu_item::firmware::Version firmwareVersionMenu;
 extern deluge::gui::menu_item::sequence::Direction sequenceDirectionMenu;

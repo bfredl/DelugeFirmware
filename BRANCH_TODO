@@ -1,0 +1,15 @@
+
+- in Voice::rendderBasicSource
+
+- tune overall gain to give optimize headroom
+
+-  mpe (take hints from Dexed MPE handling)
+- caltulate virtual midinote back from actual pitch, or rework keyboard scaling entirely
+- add some modmatrix inputs (at least for per-op ampmod and pitchmod)
+
+Stealable inputs:
+Osc1 shape
+osc1 feedback
+mod1 level
+mod1 feedback
+mod1 pitch
