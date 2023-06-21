@@ -48,6 +48,7 @@
 #include "util/functions.h"
 #include <new>
 #include <string.h>
+#include "dexed/dexeditor.h"
 
 #if HAVE_OLED
 #include "hid/display/oled.h"
@@ -59,6 +60,9 @@ extern "C" {
 }
 
 #include "menus.h"
+
+UI *dexedUI = NULL;
+Source *dexedEditedSource = NULL;
 
 using namespace deluge;
 using namespace deluge::gui;

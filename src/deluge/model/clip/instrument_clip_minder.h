@@ -32,7 +32,7 @@ class InstrumentClipMinder : public ClipMinder {
 public:
 	InstrumentClipMinder();
 	static void redrawNumericDisplay();
-	void createNewInstrument(InstrumentType newInstrumentType);
+	void createNewInstrument(InstrumentType newInstrumentType, bool is_fm = false);
 	void setLedStates();
 	void focusRegained();
 	ActionResult buttonAction(hid::Button b, bool on, bool inCardRoutine);

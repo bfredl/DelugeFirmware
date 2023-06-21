@@ -417,7 +417,9 @@ ActionResult KeyboardScreen::buttonAction(hid::Button b, bool on, bool inCardRou
 
 	else if (b == SYNTH && currentUIMode == UI_MODE_NONE) {
 		if (on) {
-			if (Buttons::isNewOrShiftButtonPressed()) {
+			if (Buttons::isButtonPressed(MOD2)) {  // FM
+				createNewInstrument(InstrumentType::SYNTH, true);
+			} else if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(InstrumentType::SYNTH);
 			}
 			else {

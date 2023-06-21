@@ -26,14 +26,17 @@
 #include "processing/engines/audio_engine.h"
 #include "processing/source.h"
 #include "storage/multi_range/multisample_range.h"
+#include "dexed/engine.h"
+#include "dexed/dx7note.h"
 
 VoiceUnisonPartSource::VoiceUnisonPartSource() {
 	voiceSample = NULL;
 	livePitchShifter = NULL;
+	dxVoice = NULL;
 }
 
 bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlaybackGuide* guide, uint32_t samplesLate,
-                                   uint32_t oscRetriggerPhase, bool resetEverything, SynthMode synthMode) {
+                                   uint32_t oscRetriggerPhase, bool resetEverything, SynthMode synthMode, uint8_t velocity) {
 
 	if (synthMode != SynthMode::FM && source->oscType == OscType::SAMPLE) {
 
@@ -60,6 +63,23 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 	        || source->oscType == OscType::INPUT_R || source->oscType == OscType::INPUT_STEREO)) {
 		//oscPos = 0;
 	}
+	else if(synthMode != SynthMode::FM && source->oscType == OscType::DEXED) {
+		if (!dxVoice) { // We might actually already have one, and just be restarting this voice
+			dxVoice = Dexed::solicitDxVoice();
+			if (!dxVoice) return false;
+		}
+
+		// TODO: this is not used for the base pitch, but it is used for calculating the detune ratios.
+		// We might want to base that on note+transpose+masterTranspose, or more likely, completely
+		// change over how "detune" is calculated (post-LUT)
+		const int base = 50857777;  // (1 << 24) * (log(440) / log(2) - 69/12)
+		const int step = (1 << 24) / 12;
+		int freq = base + step * voice->noteCodeAfterArpeggiation;
+		Dx7Patch *patch = source->dx7Patch;
+		// globalPatch is copied as soon as we make changes
+		if (!patch) patch = &Dexed::globalPatch;
+		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, freq, velocity);
+	}
 	else {
 		if (oscRetriggerPhase != 0xFFFFFFFF) {
 			oscPos = getOscInitialPhaseForZero(source->oscType) + oscRetriggerPhase;
@@ -79,6 +99,11 @@ void VoiceUnisonPartSource::unassign() {
 		voiceSample->beenUnassigned();
 		AudioEngine::voiceSampleUnassigned(voiceSample);
 		voiceSample = NULL;
+	}
+
+	if (dxVoice) {
+		Dexed::dxVoiceUnassigned(dxVoice);
+		dxVoice = NULL;
 	}
 
 	if (livePitchShifter) {

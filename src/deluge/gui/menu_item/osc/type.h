@@ -25,6 +25,7 @@
 #include "processing/source.h"
 #include "util/comparison.h"
 #include "util/misc.h"
+#include "dexed/dexeditor.h"
 
 namespace deluge::gui::menu_item::osc {
 class Type final : public Selection<kNumOscTypes>, public FormattedTitle {
@@ -49,6 +50,7 @@ public:
 		    OscType::INPUT_R,
 		    OscType::INPUT_STEREO,
 		    OscType::SAMPLE,
+		    OscType::DEXED,
 
 		    // Haven't actually really determined if this needs to be here - maybe not?
 		    OscType::WAVETABLE,
@@ -79,15 +81,16 @@ public:
 		    HAVE_OLED ? "Analog saw" : "ASAW",
 		    "Wavetable",
 		    "SAMPLE",
+		    "DX7",
 		    HAVE_OLED ? "Input (left)" : "INL",
 		    HAVE_OLED ? "Input (right)" : "INR",
 		    HAVE_OLED ? "Input (stereo)" : "INLR",
 		};
 #if HAVE_OLED
-		options[8] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? "Input (left)" : "Input";
+		options[9] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? "Input (left)" : "Input";
 #else
 
-		options[8] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? "INL" : "IN";
+		options[9] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? "INL" : "IN";
 #endif
 
 		if (soundEditor.currentSound->getSynthMode() == SynthMode::RINGMOD) {
@@ -101,6 +104,19 @@ public:
 
 	bool isRelevant(Sound* sound, int32_t whichThing) override {
 		return (sound->getSynthMode() != SynthMode::FM);
+	}
+
+	MenuItem* selectButtonPress() {
+		if (soundEditor.currentSource->oscType != OscType::DEXED) {
+			return NULL;
+		}
+		dexedEditedSource = soundEditor.currentSource;
+		if (dexedUI != NULL) {
+			openUI(dexedUI);
+		} else {
+			openUI(&dx7ui);
+		}
+		return (MenuItem*)0xFFFFFFFF;
 	}
 };
 

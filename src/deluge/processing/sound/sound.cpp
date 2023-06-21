@@ -53,9 +53,7 @@
 #include "storage/storage_manager.h"
 #include "util/functions.h"
 #include "util/misc.h"
-#include <math.h>
-#include <new>
-#include <string.h>
+#include "dexed/engine.h"
 
 extern "C" {
 #include "RZA1/mtu/mtu.h"
@@ -316,7 +314,7 @@ void Sound::setupDefaultExpressionPatching(ParamManager* paramManager) {
 	}
 }
 
-void Sound::setupAsBlankSynth(ParamManager* paramManager) {
+void Sound::setupAsBlankSynth(ParamManager* paramManager, bool is_fm) {
 
 	PatchedParamSet* patchedParams = paramManager->getPatchedParamSet();
 	patchedParams->params[Param::Local::OSC_B_VOLUME].setCurrentValueBasicForSetup(-2147483648);
@@ -326,11 +324,20 @@ void Sound::setupAsBlankSynth(ParamManager* paramManager) {
 	patchedParams->params[Param::Local::ENV_0_DECAY].setCurrentValueBasicForSetup(
 	    getParamFromUserValue(Param::Local::ENV_0_DECAY, 20));
 	patchedParams->params[Param::Local::ENV_0_SUSTAIN].setCurrentValueBasicForSetup(2147483647);
-	patchedParams->params[Param::Local::ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
+	if (is_fm) {
+		sources[0].oscType = OscType::DEXED;
+		// adjust back up for real quiet patches..
+		patchedParams->params[Param::Local::OSC_A_VOLUME].setCurrentValueBasicForSetup(1288490188); // 40 ish
+		paramManager->getPatchCableSet()->numPatchCables = 0;  // velocity is forwarded to dx7 engine, don't do master volume
+		// TODO: this could be set to "infinity" if we use the DX7 envs to figure out when a voice is gone silent
+		patchedParams->params[Param::Local::ENV_0_RELEASE].setCurrentValueBasicForSetup(429496729); // 30 ish
+	} else {
+		patchedParams->params[Param::Local::ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
 
-	paramManager->getPatchCableSet()->numPatchCables = 1;
-	paramManager->getPatchCableSet()->patchCables[0].setup(PatchSource::VELOCITY, Param::Local::VOLUME,
-	                                                       getParamFromUserValue(Param::Static::PATCH_CABLE, 50));
+		paramManager->getPatchCableSet()->numPatchCables = 1;
+		paramManager->getPatchCableSet()->patchCables[0].setup(PatchSource::VELOCITY, Param::Local::VOLUME,
+															   getParamFromUserValue(Param::Static::PATCH_CABLE, 50));
+	}
 
 	setupDefaultExpressionPatching(paramManager);
 
@@ -2015,6 +2022,12 @@ void Sound::render(ModelStackWithThreeMainThings* modelStack, StereoSample* outp
 		sourcesChanged |= anyChange << patchSourceLFOGlobalUnderlying;
 	}
 
+	for (int s = 0; s < kNumSources; s++) {
+		if (sources[s].oscType == OscType::DEXED and sources[s].dx7Patch) {
+			sources[s].dx7Patch->computeLfo(numSamples);
+		}
+	}
+
 	// Do compressor
 	if (paramManager->getPatchCableSet()->isSourcePatchedToSomething(PatchSource::COMPRESSOR)) {
 		if (sideChainHitPending) {
@@ -3031,6 +3044,22 @@ int32_t Sound::readSourceFromFile(int32_t s, ParamManagerForTimeline* paramManag
 			source->sampleControls.reversed = storageManager.readTagOrAttributeValueInt();
 			storageManager.exitTag("reversed");
 		}
+		else if (!strcmp(tagName, "dx7patch")) {
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			storageManager.readTagOrAttributeValueHexBytes(patch->currentPatch, 155);
+			storageManager.exitTag("dx7patch");
+		}
+		else if (!strcmp(tagName, "dx7opswitch")) {
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			const char *str = storageManager.readTagOrAttributeValue();
+			strncpy(patch->opSwitch, str, 7);
+			storageManager.exitTag("dx7opswitch");
+		}
+		else if (!strcmp(tagName, "dx7randomdetune")) {
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			patch->random_detune = storageManager.readTagOrAttributeValueInt();
+			storageManager.exitTag("dx7randomdetune");
+		}
 		/*
 		else if (!strcmp(tagName, "sampleSync")) {
 			source->sampleSync = stringToBool(storageManager.readTagContents());
@@ -3358,9 +3387,13 @@ void Sound::writeSourceToFile(int32_t s, char const* tagName) {
 			else {
 				goto justCloseTag;
 			}
-		}
-
-		else {
+		} else if (source->oscType == OscType::DEXED
+	    && synthMode != SynthMode::FM) { // Don't combine this with the above "if" - there's an "else" below
+			if (source->dx7Patch) {
+				Dexed::writeDxPatch(source->dx7Patch);
+			}
+			goto justCloseTag;
+		} else {
 justCloseTag:
 			storageManager.closeTag();
 		}

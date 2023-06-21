@@ -29,6 +29,7 @@
 #include "processing/engines/audio_engine.h"
 #include "storage/audio/audio_file_manager.h"
 #include "util/pack.h"
+#include "dexed/engine.h"
 
 #include <new>
 #include <stdlib.h>
@@ -531,6 +532,8 @@ extern "C" int32_t deluge_main(void) {
 #if AUTOMATED_TESTER_ENABLED
 	AutomatedTester::init();
 #endif
+
+	Dexed::init();
 
 	currentPlaybackMode = &session;
 

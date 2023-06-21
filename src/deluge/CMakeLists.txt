@@ -8,7 +8,7 @@ configure_file(version.h.in version.h @ONLY)
 # changed to add_executable
 
 add_library(deluge INTERFACE)
-file(GLOB_RECURSE deluge_SOURCES CONFIGURE_DEPENDS *.S *.c *.h *.cpp *.hpp)
+file(GLOB_RECURSE deluge_SOURCES CONFIGURE_DEPENDS *.S *.c *.h *.cpp *.hpp ../dexed/*.cpp ../dexed/*.s)
 target_sources(deluge INTERFACE ${deluge_SOURCES})
 
 target_include_directories(deluge INTERFACE

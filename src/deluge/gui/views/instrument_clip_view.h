@@ -202,7 +202,7 @@ private:
 	                                int32_t* getIndex = NULL);
 	void enterDrumCreator(ModelStackWithNoteRow* modelStack, bool doRecording = false);
 	bool getAffectEntire();
-	void createNewInstrument(InstrumentType instrumentType);
+	void createNewInstrument(InstrumentType instrumentType, bool is_fm = false);
 	Sound* getSoundForNoteRow(NoteRow* noteRow, ParamManagerForTimeline** getParamManager);
 	void adjustProbability(int32_t offset);
 	void copyNotes();
