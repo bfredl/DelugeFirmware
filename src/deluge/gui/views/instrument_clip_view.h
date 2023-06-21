@@ -207,7 +207,7 @@ private:
 	NoteRow* createNewNoteRowForKit(ModelStackWithTimelineCounter* modelStack, int yDisplay, int* getIndex = NULL);
 	void enterDrumCreator(ModelStackWithNoteRow* modelStack, bool doRecording = false);
 	bool getAffectEntire();
-	void createNewInstrument(uint8_t instrumentType);
+	void createNewInstrument(uint8_t instrumentType, bool is_fm = false);
 	Sound* getSoundForNoteRow(NoteRow* noteRow, ParamManagerForTimeline** getParamManager);
 	void adjustProbability(int offset);
 	void copyNotes();

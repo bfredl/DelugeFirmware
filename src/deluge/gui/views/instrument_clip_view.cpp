@@ -431,7 +431,9 @@ doOther:
 			}
 
 			if (currentUIMode == UI_MODE_NONE) {
-				if (Buttons::isNewOrShiftButtonPressed()) {
+				if (Buttons::isButtonPressed(MOD2)) {
+					createNewInstrument(INSTRUMENT_TYPE_SYNTH, true);
+				} else if (Buttons::isNewOrShiftButtonPressed()) {
 					createNewInstrument(INSTRUMENT_TYPE_SYNTH);
 				}
 				else {
@@ -1117,9 +1119,9 @@ void InstrumentClipView::doubleClipLengthAction() {
 #endif
 }
 
-void InstrumentClipView::createNewInstrument(uint8_t newInstrumentType) {
+void InstrumentClipView::createNewInstrument(uint8_t newInstrumentType, bool is_fm) {
 
-	InstrumentClipMinder::createNewInstrument(newInstrumentType);
+	InstrumentClipMinder::createNewInstrument(newInstrumentType, is_fm);
 
 	recalculateColours();
 	uiNeedsRendering(this);

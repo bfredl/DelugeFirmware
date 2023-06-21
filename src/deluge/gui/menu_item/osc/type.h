@@ -23,6 +23,7 @@
 #include "processing/engines/audio_engine.h"
 #include "processing/source.h"
 #include "util/comparison.h"
+#include "dexed/dexeditor.h"
 
 extern char oscTypeTitle[];
 namespace menu_item::osc {
@@ -47,7 +48,7 @@ public:
 		int oldValue = soundEditor.currentSource->oscType;
 		int newValue = soundEditor.currentValue;
 
-		auto needs_unassignment = {OSC_TYPE_INPUT_L, OSC_TYPE_INPUT_R, OSC_TYPE_INPUT_STEREO, OSC_TYPE_SAMPLE,
+		auto needs_unassignment = {OSC_TYPE_INPUT_L, OSC_TYPE_INPUT_R, OSC_TYPE_INPUT_STEREO, OSC_TYPE_SAMPLE, OSC_TYPE_DEXED,
 
 		                           // Haven't actually really determined if this needs to be here - maybe not?
 		                           OSC_TYPE_WAVETABLE};
@@ -67,13 +68,13 @@ public:
 #if HAVE_OLED
 		static char inLText[] = "Input (left)";
 		static char const* options[] = {"SINE",  "TRIANGLE",      "SQUARE",         "Analog square",
-		                                "Saw",   "Analog saw",    "Wavetable",      "SAMPLE",
+		                                "Saw",   "Analog saw",    "Wavetable",      "SAMPLE", "DX7",
 		                                inLText, "Input (right)", "Input (stereo)", NULL};
 		inLText[5] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? ' ' : 0;
 #else
 		static char inLText[4] = "INL";
 		static char const* options[] = {"SINE",      "TRIANGLE", "SQUARE", "ASQUARE", "SAW", "ASAW",
-		                                "Wavetable", "SAMPLE",   inLText,  "INR",     "INLR"};
+		                                "Wavetable", "SAMPLE", "DX7",  inLText,  "INR",     "INLR"};
 		inLText[2] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) ? 'L' : 0;
 #endif
 		return options;
@@ -92,6 +93,19 @@ public:
 	}
 	bool isRelevant(Sound* sound, int whichThing) {
 		return (sound->getSynthMode() != SYNTH_MODE_FM);
+	}
+
+	MenuItem* selectButtonPress() {
+		if (soundEditor.currentSource->oscType != OSC_TYPE_DEXED) {
+			return NULL;
+		}
+		dexedEditedSource = soundEditor.currentSource;
+		if (dexedUI != NULL) {
+			openUI(dexedUI);
+		} else {
+			openUI(&dx7ui);
+		}
+		return (MenuItem*)0xFFFFFFFF;
 	}
 };
 

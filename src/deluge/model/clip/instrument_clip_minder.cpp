@@ -159,7 +159,7 @@ void InstrumentClipMinder::drawMIDIControlNumber(int controlNumber, bool automat
 #endif
 }
 
-void InstrumentClipMinder::createNewInstrument(int newInstrumentType) {
+void InstrumentClipMinder::createNewInstrument(int newInstrumentType, bool is_fm) {
 	int error;
 
 	int oldInstrumentType = getCurrentClip()->output->type;
@@ -209,6 +209,7 @@ gotError:
 
 #if HAVE_OLED
 	char const* message = (newInstrumentType == INSTRUMENT_TYPE_KIT) ? "New kit created" : "New synth created";
+	if (is_fm) { message = "DX7 synth created"; }
 	OLED::consoleText(message);
 #else
 	char const* message = "NEW";
@@ -216,7 +217,7 @@ gotError:
 #endif
 
 	if (newInstrumentType == INSTRUMENT_TYPE_SYNTH) {
-		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager);
+		((SoundInstrument*)newInstrument)->setupAsBlankSynth(&newParamManager, is_fm);
 	}
 
 	char modelStackMemory[MODEL_STACK_MAX_SIZE];
@@ -410,7 +411,10 @@ yesLoadInstrument:
 				return ACTION_RESULT_REMIND_ME_OUTSIDE_CARD_ROUTINE;
 			}
 
-			if (Buttons::isNewOrShiftButtonPressed()) {
+			if (Buttons::isButtonPressed(MOD2)) {  // FM
+				createNewInstrument(INSTRUMENT_TYPE_SYNTH, true);
+			}
+			else if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(INSTRUMENT_TYPE_SYNTH);
 			}
 			else {

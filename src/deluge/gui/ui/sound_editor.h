@@ -143,3 +143,6 @@ private:
 };
 
 extern SoundEditor soundEditor;
+
+extern UI *dexedUI;
+extern Source *dexedEditedSource;

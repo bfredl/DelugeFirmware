@@ -854,13 +854,15 @@ char const* oscTypeToString(unsigned int oscType) {
 	case OSC_TYPE_INPUT_STEREO:
 		return "inStereo";
 
+	case OSC_TYPE_DEXED:
+		return "dx7";
+
 	case NUM_OSC_TYPES ... 0xFFFFFFFF:
 		__builtin_unreachable();
 	}
 }
 
 int stringToOscType(char const* string) {
-
 	if (!strcmp(string, "square")) {
 		return OSC_TYPE_SQUARE;
 	}
@@ -890,6 +892,9 @@ int stringToOscType(char const* string) {
 	}
 	else if (!strcmp(string, "inStereo")) {
 		return OSC_TYPE_INPUT_STEREO;
+	}
+	else if (!strcmp(string, "dx7")) {
+		return OSC_TYPE_DEXED;
 	}
 	else {
 		return OSC_TYPE_TRIANGLE;
