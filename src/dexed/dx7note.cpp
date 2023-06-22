@@ -46,7 +46,7 @@ static const uint8_t pitchmodsenstab[] = {
 
 
 void Dx7Patch::update(const uint8_t patch[156]) {
-    currentPatch = patch;
+    currentPatch = (uint8_t *)patch; // fyyy
     int rates[4];
     int levels[4];
 
@@ -55,19 +55,7 @@ void Dx7Patch::update(const uint8_t patch[156]) {
         int mode = patch[off + 17];
         ampmodsens[op] = ampmodsenstab[patch[off + 14] & 3];
         opMode[op] = mode;
-        
-        for (int i = 0; i < 4; i++) {
-            rates[i] = patch[off + i];
-            levels[i] = patch[off + 4 + i];
-        }
-        env_p[op].update(rates, levels);
     }
-
-    for (int i = 0; i < 4; i++) {
-        rates[i] = patch[126 + i];
-        levels[i] = patch[130 + i];
-    }
-    pitchenv_p.update(rates, levels);
 
     int feedback = patch[135];
     fb_shift = feedback != 0 ? FEEDBACK_BITDEPTH - feedback : 16;
@@ -179,6 +167,7 @@ Dx7Note::Dx7Note() {
 // TODO: recalculate Scale() using logfreq
 void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
     p = &newp;
+    patch = newp.currentPatch;
     const uint8_t *patch = newp.currentPatch;
     
     for (int op = 0; op < 6; op++) {
@@ -193,7 +182,7 @@ void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
         outlevel += ScaleVelocity(velocity, patch[off + 15]);
         outlevel = max(0, outlevel);
         int rate_scaling = ScaleRate(midinote, patch[off + 13]);
-        env_[op].init(p->env_p[op], outlevel, rate_scaling);
+        env_[op].init(env_p(op), outlevel, rate_scaling);
         
         int coarse = patch[off + 18];
         int fine = patch[off + 19];
@@ -201,7 +190,7 @@ void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
         int32_t freq = osc_freq(logfreq, p->opMode[op], coarse, fine, detune);
         basepitch_[op] = freq;
     }
-    pitchenv_.set(p->pitchenv_p);
+    pitchenv_.set(pitchenv_p());
 }
 
 void Dx7Note::compute(int32_t *buf, int n, int32_t lfo_val, int32_t lfo_delay, int pb, const Controllers *ctrls) {
@@ -214,7 +203,7 @@ void Dx7Note::compute(int32_t *buf, int n, int32_t lfo_val, int32_t lfo_delay, i
     int32_t pmod_2 = (int32_t)(((int64_t)ctrls->pitch_mod * (int64_t)senslfo) >> 14);
     pmod_2 = abs(pmod_2);
     int32_t pitch_mod = max(pmod_1, pmod_2);
-    pitch_mod = pitchenv_.getsample(p->pitchenv_p, n) + (pitch_mod * (senslfo < 0 ? -1 : 1));
+    pitch_mod = pitchenv_.getsample(pitchenv_p(), n) + (pitch_mod * (senslfo < 0 ? -1 : 1));
     
     
     int32_t pitch_base = pb + ctrls->masterTune;
@@ -237,7 +226,7 @@ void Dx7Note::compute(int32_t *buf, int n, int32_t lfo_val, int32_t lfo_delay, i
         params[op].phase = phase[op];
         params[op].gain_out = gain_out[op];
         if ( ctrls->opSwitch[op] == '0' )  {
-            env_[op].getsample(p->env_p[op], n); // advance the envelop even if it is not playing
+            env_[op].getsample(env_p(op), n); // advance the envelop even if it is not playing
             params[op].level_in = 0;
             params[op].freq = 0;
         } else {
@@ -248,7 +237,7 @@ void Dx7Note::compute(int32_t *buf, int n, int32_t lfo_val, int32_t lfo_delay, i
             else
                 params[op].freq = Freqlut::lookup(basepitch_[op] + pitch_mod);
             
-            int32_t level = env_[op].getsample(p->env_p[op], n);
+            int32_t level = env_[op].getsample(env_p(op), n);
             if (p->ampmodsens[op] != 0) {
                 uint32_t sensamp = (uint32_t)(((uint64_t) amd_mod) * ((uint64_t) p->ampmodsens[op]) >> 24);
                 
@@ -269,14 +258,13 @@ void Dx7Note::compute(int32_t *buf, int n, int32_t lfo_val, int32_t lfo_delay, i
 
 void Dx7Note::keyup() {
     for (int op = 0; op < 6; op++) {
-        env_[op].keydown(p->env_p[op], false);
+        env_[op].keydown(env_p(op), false);
     }
-    pitchenv_.keydown(p->pitchenv_p, false);
+    pitchenv_.keydown(pitchenv_p(), false);
 }
 
 void Dx7Note::updateBasePitches(int logFreq)
 {
-    const uint8_t *patch = p->currentPatch;
     for (int op = 0; op < 6; op++)
     {
         int off = op * 21;
@@ -291,7 +279,7 @@ void Dx7Note::updateBasePitches(int logFreq)
 // TODO: can share yet more codes with ::init()
 void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
     p = &newp;
-    const uint8_t *patch = newp.currentPatch;
+    patch = newp.currentPatch;
 
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
@@ -311,7 +299,7 @@ void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
         outlevel += ScaleVelocity(velocity, patch[off + 15]);
         outlevel = max(0, outlevel);
         int rate_scaling = ScaleRate(midinote, patch[off + 13]);
-        env_[op].update(p->env_p[op], outlevel, rate_scaling);
+        env_[op].update(env_p(op), outlevel, rate_scaling);
     }
 
     // TODO: did we the pitchenv?

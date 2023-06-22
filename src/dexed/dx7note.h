@@ -38,10 +38,7 @@ struct VoiceStatus {
 
 class Dx7Patch {
   public:
-    const uint8_t *currentPatch;
-    EnvParams env_p[6];
-    EnvParams pitchenv_p;
-
+    uint8_t *currentPatch;
     int pitchmoddepth;
     int pitchmodsens;
     int ampmoddepth;
@@ -88,6 +85,15 @@ private:
     int32_t fb_buf_[2];
 
     const Dx7Patch *p;
+    uint8_t *patch; // raw patch, same as p->currentPatch
+
+	EnvParams & env_p(int op) {
+		return *(EnvParams *)&patch[op*21];
+	}
+	EnvParams & pitchenv_p() {
+		return *(EnvParams *)&patch[126];
+	}
+
 
 public:
     Dx7Note *nextUnassigned;

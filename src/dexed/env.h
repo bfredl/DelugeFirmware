@@ -1,13 +1,13 @@
 /*
- * Copyright 2017 Pascal Gauthier. 
+ * Copyright 2017 Pascal Gauthier.
  * Copyright 2012 Google Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,15 +26,8 @@
 
 class EnvParams {
 public:
-  void update(const int r[4], const int l[4]) {
-    for (int i = 0; i < 4; i++) {
-        rates[i] = r[i];
-        levels[i] = l[i];
-    }
-  }
-
-  int rates[4];
-  int levels[4];
+  uint8_t rates[4];
+  uint8_t levels[4];
 };
 
 class Env {
@@ -57,10 +50,10 @@ class Env {
   void keydown(const EnvParams &p, bool down);
   static int scaleoutlevel(int outlevel);
   void getPosition(char *step);
-    
+
   static void init_sr(double sample_rate);
   void transfer(Env &src);
-    
+
  private:
 
   // PG: This code is normalized to 44100, need to put a multiplier
