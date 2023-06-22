@@ -39,15 +39,6 @@ struct VoiceStatus {
 class Dx7Patch {
   public:
     uint8_t *currentPatch;
-    int pitchmoddepth;
-    int pitchmodsens;
-    int ampmoddepth;
-
-    int32_t ampmodsens[6];
-    uint8_t opMode[6];
-    uint8_t algorithm;
-    int32_t fb_shift;
-
     void update(const uint8_t patch[156]);
 };
 
@@ -84,7 +75,6 @@ private:
     int32_t basepitch_[6];
     int32_t fb_buf_[2];
 
-    const Dx7Patch *p;
     uint8_t *patch; // raw patch, same as p->currentPatch
 
 	EnvParams & env_p(int op) {
