@@ -1,11 +1,10 @@
 
 - in Voice::rendderBasicSource
 
-- reduce overall rain to give better headroom
-- apply sourceAmpitude/amplitudeIncrement
+- reduce overall rain to give better headroom (done)
+- apply sourceAmpitude/amplitudeIncrement (DONE)
 
 
 - respect pitch from transpose/global-transpose/modmatrix
 - caltulate virtual midinote back from actual pitch, or rework keyboard scaling entirely
 - add some modmatrix inputs (at least for per-op ampmod and pitchmod)
-

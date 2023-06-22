@@ -2183,7 +2183,7 @@ dontUseCache : {}
 			int32_t sourceAmplitudeNow = sourceAmplitude;
 			for (int i = 0; i < numSamples; i++) {
 				sourceAmplitudeNow += amplitudeIncrement;
-				oscBuffer[i] +=  multiply_32x32_rshift32(uniBuf[i], sourceAmplitudeNow);
+				oscBuffer[i] +=  multiply_32x32_rshift32(uniBuf[i], sourceAmplitudeNow) << 8;
 			}
 
 		// Or regular wave
