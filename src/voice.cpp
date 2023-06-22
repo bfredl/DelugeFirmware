@@ -2176,7 +2176,15 @@ dontUseCache : {}
 #endif
 		else if (sound->sources[s].oscType == OSC_TYPE_DEXED) {
 			// TODO: render to a separate buffer to ungain it
-			unisonParts[u].sources[s].dxVoice->compute(oscBuffer, numSamples, 0, 0, 0, &Dexed::dummy_controller);
+			static int32_t uniBuf[128];
+			memset(uniBuf, 0, sizeof uniBuf);
+			unisonParts[u].sources[s].dxVoice->compute(uniBuf, numSamples, 0, 0, 0, &Dexed::dummy_controller);
+
+			int32_t sourceAmplitudeNow = sourceAmplitude;
+			for (int i = 0; i < numSamples; i++) {
+				sourceAmplitudeNow += amplitudeIncrement;
+				oscBuffer[i] +=  multiply_32x32_rshift32(uniBuf[i], sourceAmplitudeNow);
+			}
 
 		// Or regular wave
 		} else {
