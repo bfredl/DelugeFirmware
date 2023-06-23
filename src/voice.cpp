@@ -48,6 +48,7 @@
 #include "PatchCableSet.h"
 #include "InstrumentClip.h"
 #include "FlashStorage.h"
+#include "dexed/engine.h"
 
 extern "C" {
 #include "ssi_all_cpus.h"
@@ -276,7 +277,7 @@ activenessDetermined:
 			if (unisonParts[u].sources[s].active) {
 				bool success =
 				    unisonParts[u].sources[s].noteOn(this, source, &guides[s], samplesLate, sound->oscRetriggerPhase[s],
-				                                     resetEnvelopes, sound->synthMode);
+				                                     resetEnvelopes, sound->synthMode, velocity);
 				if (!success) return false; // This shouldn't really ever happen I don't think really...
 			}
 		}
@@ -2173,9 +2174,20 @@ dontUseCache : {}
 			}
 		}
 #endif
+		else if (sound->sources[s].oscType == OSC_TYPE_DEXED) {
+			// TODO: render to a separate buffer to ungain it
+			static int32_t uniBuf[128];
+			memset(uniBuf, 0, sizeof uniBuf);
+			unisonParts[u].sources[s].dxVoice->compute(uniBuf, numSamples, 0, 0, 0, &Dexed::dummy_controller);
+
+			int32_t sourceAmplitudeNow = sourceAmplitude;
+			for (int i = 0; i < numSamples; i++) {
+				sourceAmplitudeNow += amplitudeIncrement;
+				oscBuffer[i] +=  multiply_32x32_rshift32(uniBuf[i], sourceAmplitudeNow) << 8;
+			}
 
 		// Or regular wave
-		else {
+		} else {
 			uint32_t oscSyncPosThisUnison;
 			uint32_t oscSyncPhaseIncrementsThisUnison;
 			uint32_t oscRetriggerPhase =

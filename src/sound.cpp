@@ -52,6 +52,7 @@
 #include "IndicatorLEDs.h"
 #include "FlashStorage.h"
 #include "PatchCableSet.h"
+#include "dexed/engine.h"
 
 extern "C" {
 #include "mtu.h"
@@ -2800,6 +2801,10 @@ int Sound::readSourceFromFile(int s, ParamManagerForTimeline* paramManager, int3
 			source->sampleControls.reversed = storageManager.readTagOrAttributeValueInt();
 			storageManager.exitTag("reversed");
 		}
+		else if (!strcmp(tagName, "dx7patch")) {
+			Dexed::readDxPatch(&source->dx7Patch);
+			storageManager.exitTag("dx7patch");
+		}
 		/*
 		else if (!strcmp(tagName, "sampleSync")) {
 			source->sampleSync = stringToBool(storageManager.readTagContents());
@@ -3106,9 +3111,13 @@ void Sound::writeSourceToFile(int s, char const* tagName) {
 			else {
 				goto justCloseTag;
 			}
-		}
-
-		else {
+		} else if (source->oscType == OSC_TYPE_DEXED
+	    && synthMode != SYNTH_MODE_FM) { // Don't combine this with the above "if" - there's an "else" below
+			if (source->dx7Patch) {
+				Dexed::writeDxPatch(source->dx7Patch);
+			}
+			goto justCloseTag;
+		} else {
 justCloseTag:
 			storageManager.closeTag();
 		}
