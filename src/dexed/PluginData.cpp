@@ -31,22 +31,22 @@ using namespace ::std;
 uint8_t sysexChecksum(const uint8_t *sysex, int size) {
     int sum = 0;
     int i;
-    
+
     for (i = 0; i < size; sum -= sysex[i++]);
     return sum & 0x7F;
 }
 
 void exportSysexPgm(uint8_t *dest, uint8_t *src) {
     uint8_t header[] = { 0xF0, 0x43, 0x00, 0x00, 0x01, 0x1B };
-   
+
     memcpy(dest, header, 6);
-    
+
     // copy 1 unpacked voices
     memcpy(dest+6, src, 155);
-        
+
     // make checksum for dump
     uint8_t footer[] = { sysexChecksum(src, 155), 0xF7 };
-    
+
     memcpy(dest+161, footer, 2);
 }
 
@@ -55,13 +55,13 @@ void exportSysexPgm(uint8_t *dest, uint8_t *src) {
  */
 void Cartridge::packProgram(uint8_t *src, int idx, char *name, char *opSwitch) {
     uint8_t *bulk = voiceData + 6 + (idx * 128);
-    
+
     for(int op = 0; op < 6; op++) {
         // eg rate and level, brk pt, depth, scaling
         memcpy(bulk + op * 17, src + op * 21, 11);
         int pp = op*17;
         int up = op*21;
-        
+
         // left curves
         bulk[pp+11] = (src[up+11]&0x03) | ((src[up+12]&0x03) << 2);
         bulk[pp+12] = (src[up+13]&0x07) | ((src[up+20]&0x0f) << 3);
@@ -82,7 +82,7 @@ void Cartridge::packProgram(uint8_t *src, int idx, char *name, char *opSwitch) {
     memcpy(bulk + 112, src + 137, 4);      // lfo
     bulk[116] = (src[141]&0x01) | (((src[142]&0x07) << 1) | ((src[143]&0x07) << 4));
     bulk[117] = src[144];
-        
+
     int eos = 0;
 
     for(int i=0; i < 10; i++) {
@@ -106,12 +106,12 @@ void Cartridge::packProgram(uint8_t *src, int idx, char *name, char *opSwitch) {
 char normparm(char value, char max, int id) {
     if ( value <= max && value >= 0 )
         return value;
-    
+
     // if this is beyond the max, we expect a 0-255 range, normalize this
     // to the expected return value; and this value as a random data.
-    
+
     value = abs(value);
-    
+
     char v = ((float)value)/255 * max;
 
     return v;
@@ -120,15 +120,15 @@ char normparm(char value, char max, int id) {
 void Cartridge::unpackProgram(uint8_t *unpackPgm, int idx) {
     // TODO put this in uint8_t :D
     char *bulk = (char *)voiceData + 6 + (idx * 128);
-    
+
     for (int op = 0; op < 6; op++) {
         // eg rate and level, brk pt, depth, scaling
-        
+
         for(int i=0; i<11; i++) {
-            uint8_t currparm = bulk[op * 17 + i] & 0x7F; // mask BIT7 (don't care per sysex spec) 
+            uint8_t currparm = bulk[op * 17 + i] & 0x7F; // mask BIT7 (don't care per sysex spec)
             unpackPgm[op * 21 + i] = normparm(currparm, 99, i);
         }
-        
+
         memcpy(unpackPgm + op * 21, bulk + op * 17, 11);
         char leftrightcurves = bulk[op * 17 + 11]&0xF; // bits 4-7 don't care per sysex spec
         unpackPgm[op * 21 + 11] = leftrightcurves & 3;
@@ -145,13 +145,13 @@ void Cartridge::unpackProgram(uint8_t *unpackPgm, int idx) {
         unpackPgm[op * 21 + 19] = bulk[op * 17 + 16]&0x7F;  // fine freq
         unpackPgm[op * 21 + 20] = (detune_rs >> 3) &0x7F;
     }
-    
+
     for (int i=0; i<8; i++)  {
         uint8_t currparm = bulk[102 + i] & 0x7F; // mask BIT7 (don't care per sysex spec)
         unpackPgm[126+i] = normparm(currparm, 99, 126+i);
     }
     unpackPgm[134] = normparm(bulk[110]&0x1F, 31, 134); // bits 5-7 are don't care per sysex spec
-    
+
     char oks_fb = bulk[111]&0xF;//bits 4-7 are don't care per spec
     unpackPgm[135] = oks_fb & 7;
     unpackPgm[136] = oks_fb >> 3;
@@ -188,20 +188,21 @@ void unpackOpSwitch(Controllers &controllers, char packOpValue) {
     controllers.opSwitch[1] = ((packOpValue >> 1) &1) + 48;
     controllers.opSwitch[0] = (packOpValue &1) + 48;
 }
-    const char init_voice[] =
-      { 99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
-        99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
-        99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
-        99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
-        99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
-        99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 99, 0, 1, 0, 7,
-        99, 99, 99, 99, 50, 50, 50, 50, 0, 0, 1, 35, 0, 0, 0, 1, 0, 3, 24,
-        73, 78, 73, 84, 32, 86, 79, 73, 67, 69 };
+
+const uint8_t init_voice[] =
+  { 99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
+	99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
+	99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
+	99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
+	99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7,
+	99, 99, 99, 99, 99, 99, 99, 00, 0, 0, 0, 0, 0, 0, 0, 0, 99, 0, 1, 0, 7,
+	99, 99, 99, 99, 50, 50, 50, 50, 0, 0, 1, 35, 0, 0, 0, 1, 0, 3, 24,
+	73, 78, 73, 84, 32, 86, 79, 73, 67, 69 };
 
 /*
 void DexedAudioProcessor::sendCurrentSysexProgram() {
     uint8_t raw[163];
-    
+
     packOpSwitch();
     exportSysexPgm(raw, data);
     raw[2] = raw[2] | sysexComm.getChl();
@@ -212,7 +213,7 @@ void DexedAudioProcessor::sendCurrentSysexProgram() {
 
 void DexedAudioProcessor::sendCurrentSysexCartridge() {
     uint8_t raw[4104];
-    
+
     currentCart.saveVoice(raw);
     raw[2] = raw[2] | sysexComm.getChl();
     if ( sysexComm.isOutputActive() ) {
@@ -223,7 +224,7 @@ void DexedAudioProcessor::sendCurrentSysexCartridge() {
 void DexedAudioProcessor::sendSysexCartridge(File cart) {
     if ( ! sysexComm.isOutputActive() )
         return;
-    
+
     std::unique_ptr<juce::FileInputStream> fis = cart.createInputStream();
     if ( fis == NULL ) {
         String f = cart.getFullPathName();
@@ -231,10 +232,10 @@ void DexedAudioProcessor::sendSysexCartridge(File cart) {
                                           "Error",
                                           "Unable to open: " + f);
     }
-    
+
     uint8 syx_data[65535];
     int sz = fis->read(syx_data, 65535);
-    
+
     if (syx_data[0] != 0xF0) {
         String f = cart.getFullPathName();
         AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,

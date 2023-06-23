@@ -46,7 +46,7 @@ static const uint8_t pitchmodsenstab[] = {
 
 
 void Dx7Patch::update(const uint8_t patch[156]) {
-    currentPatch = (uint8_t *)patch; // fyyy
+    memcpy(currentPatch, patch, sizeof currentPatch);
 }
 
 int32_t Dx7Note::osc_freq(int logFreq_in, int mode, int coarse, int fine, int detune) {

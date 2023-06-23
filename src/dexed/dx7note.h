@@ -38,7 +38,7 @@ struct VoiceStatus {
 
 class Dx7Patch {
   public:
-    uint8_t *currentPatch;
+    uint8_t currentPatch[156];
     void update(const uint8_t patch[156]);
 };
 

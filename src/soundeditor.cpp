@@ -94,6 +94,9 @@ extern "C" {
 
 SoundEditor soundEditor;
 
+UI *dexedUI = NULL;
+Source *dexedEditedSource = NULL;
+
 MenuItemSubmenu soundEditorRootMenu;
 MenuItemSubmenu soundEditorRootMenuMIDIOrCV;
 MenuItemSubmenu soundEditorRootMenuAudioClip;
@@ -650,6 +653,17 @@ public:
 	}
 	bool isRelevant(Sound* sound, int whichThing) {
 		return (sound->getSynthMode() != SYNTH_MODE_FM);
+	}
+
+	MenuItem* selectButtonPress() {
+		if (soundEditor.currentSource->oscType != OSC_TYPE_DEXED) {
+			return NULL;
+		}
+		dexedEditedSource = soundEditor.currentSource;
+		if (dexedUI != NULL) {
+			openUI(dexedUI);
+		}
+		return (MenuItem*)0xFFFFFFFF;
 	}
 } oscTypeMenu;
 

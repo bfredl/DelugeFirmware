@@ -35,25 +35,25 @@ void exportSysexPgm(uint8_t *dest, uint8_t *src);
 class Cartridge {
     uint8_t voiceData[SYSEX_SIZE];
     uint8_t perfData[SYSEX_SIZE];
-    
+
     void setHeader() {
         uint8_t voiceHeader[] = SYSEX_HEADER;
         memcpy(voiceData, voiceHeader, 6);
         voiceData[4102] = sysexChecksum(voiceData+6, 4096);
         voiceData[4103] = 0xF7;
     }
-    
+
 public:
     Cartridge() { }
-    
+
     Cartridge(const Cartridge &cpy) {
         memcpy(voiceData, cpy.voiceData, SYSEX_SIZE);
         memcpy(perfData, cpy.perfData, SYSEX_SIZE);
     }
-    
+
     static void normalizePgmName(char buffer[11], const char *sysexName) {
         memcpy(buffer, sysexName, 10);
-        
+
         for (int j = 0; j < 10; j++) {
             char c = (unsigned char) buffer[j];
             c &= 0x7F; // strip don't care most-significant bit from name
@@ -84,24 +84,24 @@ public:
      */
     int load(const uint8_t *stream, int size) {
         const uint8_t *pos = stream;
-        
+
         if ( size < 4096 ) {
             memcpy(voiceData+6, pos, size);
             TRACE("too small sysex rc=2");
             return 2;
         }
-        
+
         if ( pos[0] != 0xF0 ) {
             // it is not, just copy the first 4096 bytes
             memcpy(voiceData + 6, pos, 4096);
             TRACE("stream is not a sysex rc=2");
             return 2;
         }
-        
+
         // limit the size of the sysex scan
         if ( size > 65535 )
             size = 65535;
-        
+
         // we loop until we find something that looks like a DX7 cartridge (based on size)
         while(size >= 4104) {
             // it was a sysex first, now random data; return random
@@ -110,7 +110,7 @@ public:
                 TRACE("stream was a sysex, but not anymore rc=2");
                 return 2;
             }
-            
+
             // check if this is the size of a DX7 sysex cartridge
             for(int i=0;i<size;i++) {
                 if ( pos[i] == 0xF7 ) {
@@ -133,43 +133,43 @@ public:
             TRACE("sysex stream parsed without any end message, skipping...");
             break;
         }
-        
+
         // it is a sysex, but doesn't seems to be related to any DX series ...
         memcpy(voiceData + 6, stream, 4096);
         TRACE("nothing in the sysex stream was DX related rc=2");
         return 2;
     }
-    
+
     void saveVoice(uint8_t *sysex) {
         setHeader();
         memcpy(sysex, voiceData, SYSEX_SIZE);
     }
-    
+
     char *getRawVoice() {
         return (char *) voiceData + 6;
     }
-    
+
     char *getVoiceSysex() {
         setHeader();
         return (char *) voiceData;
     }
-    
+
     void getProgramNames(char dest[32][11]) { // 10 chars + NUL
         for (int i = 0; i < 32; i++) {
             normalizePgmName(dest[i], getRawVoice() + ((i * 128) + 118));
         }
     }
-    
+
     Cartridge operator =(const Cartridge other) {
         memcpy(voiceData, other.voiceData, SYSEX_SIZE);
         memcpy(perfData, other.perfData, SYSEX_SIZE);
         return *this;
     }
-    
+
     void unpackProgram(uint8_t *unpackPgm, int idx);
     void packProgram(uint8_t *src, int idx, char *name, char *opSwitch);
 };
 
-extern const char init_voice[];
+extern const uint8_t init_voice[];
 
 #endif  // PLUGINDATA_H_INCLUDED
