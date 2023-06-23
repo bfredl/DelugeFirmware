@@ -45,6 +45,7 @@ Source::Source() {
 	timeStretchAmount = 0;
 
 	defaultRangeI = -1;
+	dx7Patch = NULL;
 }
 
 Source::~Source() {

@@ -6,5 +6,11 @@
 
 
 - respect pitch from transpose/global-transpose/modmatrix
+- velocity and mpe (take hints from Dexed MPE handling)
 - caltulate virtual midinote back from actual pitch, or rework keyboard scaling entirely
 - add some modmatrix inputs (at least for per-op ampmod and pitchmod)
+
+- save/load patch as part of SYNTH.xml
+
+- load patches from .syx
+  - how handle LFO? either implement dx7 LFO, or copy data into the deluge LFO
