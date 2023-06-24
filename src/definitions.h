@@ -961,4 +961,7 @@ typedef enum SyncLevel_ {
 #define BROWSER_AND_MENU_NUM_LINES 1
 #endif
 
+extern int thePhase;
+extern int theNote;
+
 #endif

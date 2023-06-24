@@ -2178,6 +2178,7 @@ dontUseCache : {}
 			// TODO: render to a separate buffer to ungain it
 			static int32_t uniBuf[128];
 			memset(uniBuf, 0, sizeof uniBuf);
+			thePhase = phaseIncrement;
 			unisonParts[u].sources[s].dxVoice->compute(uniBuf, numSamples, 0, 0, 0, &Dexed::dummy_controller);
 
 			int32_t sourceAmplitudeNow = sourceAmplitude;

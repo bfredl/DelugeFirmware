@@ -69,6 +69,7 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 		int freq = base + step * voice->noteCodeAfterArpeggiation;
 		Dx7Patch *patch = source->dx7Patch;
 		// globalPatch is copied as soon as we make changes
+		theNote = voice->noteCodeAfterArpeggiation;
 		if (!patch) patch = &Dexed::globalPatch;
 		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, freq, velocity);
 	}

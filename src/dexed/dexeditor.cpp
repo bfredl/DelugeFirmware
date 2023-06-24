@@ -312,6 +312,11 @@ void Dx7UI::renderOLED(uint8_t image[][OLED_MAIN_WIDTH_PIXELS]) {
   } else {
     const char *text = "DX EDITOR";
     OLED::drawString(text, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+    char buffer[12];
+    intToString(theNote, buffer, 3);
+    OLED::drawString(buffer, 0, 5+(TEXT_SIZE_Y_UPDATED+2), OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+    intToString(thePhase, buffer, 3);
+    OLED::drawString(buffer, 0, 5+2*(TEXT_SIZE_Y_UPDATED+2), OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
   }
 }
 #endif
@@ -340,5 +345,8 @@ int Dx7UI::buttonAction(int x, int y, bool on, bool inCardRoutine) {
   }
   return ACTION_RESULT_DEALT_WITH;
 }
+
+int theNote;
+int thePhase;
 
 Dx7UI dx7ui;
