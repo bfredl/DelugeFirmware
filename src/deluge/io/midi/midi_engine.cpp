@@ -27,6 +27,7 @@
 #include "RZA1/mtu/mtu.h"
 #include "io/midi/midi_device.h"
 #include "io/midi/midi_device_manager.h"
+#include "hid/hid_sysex.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -704,6 +705,11 @@ void MidiEngine::midiSysexReceived(int ip, int d, int cable, uint8_t* data, int 
 		case 1:
 			numericDriver.displayPopup(HAVE_OLED ? "hello sysex" : "SYSX");
 			break;
+
+		case 2:
+			HIDSysex::sysexReceived(ip, d, cable, data, len);
+			break;
+
 
 		case 0x7f: // PONG, reserved
 		default:
