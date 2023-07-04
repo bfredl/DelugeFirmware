@@ -27,6 +27,7 @@
 #include "RZA1/mtu/mtu.h"
 #include "io/midi/midi_device.h"
 #include "io/midi/midi_device_manager.h"
+#include "hid/hid_sysex.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -256,6 +257,7 @@ void MidiEngine::flushUSBMIDIOutput() {
 
 	for (int ip = 0; ip < USB_NUM_USBIP; ip++) {
 		if (anyUSBSendingStillHappening[ip]) {
+			anythingInUSBOutputBuffer = true;
 			continue;
 		}
 
@@ -265,16 +267,15 @@ void MidiEngine::flushUSBMIDIOutput() {
 		if (aPeripheral) {
 			ConnectedUSBMIDIDevice* connectedDevice = &connectedUSBMIDIDevices[ip][0];
 
-			if (!connectedDevice->numMessagesQueued) {
+			// still sending, call me later maybe
+			if (connectedDevice->numBytesSendingNow) {
+				anythingInUSBOutputBuffer = true;
 				continue;
 			}
 
-			// Copy the data into the actual output buffer
-			// Note - does this mean it's fine to have multiple devices sharing one physical device?
-			// Or would that slow it down? Probably depends how fast this section is
-			connectedDevice->numBytesSendingNow = connectedDevice->numMessagesQueued << 2;
-			connectedDevice->numMessagesQueued = 0;
-			memcpy(connectedDevice->dataSendingNow, connectedDevice->preSendData, connectedDevice->numBytesSendingNow);
+			if (!connectedDevice->consumeBytes()) {
+				continue;
+			}
 
 			g_usb_midi_send_utr[ip].keyword = USB_CFG_PMIDI_BULK_OUT;
 			g_usb_midi_send_utr[ip].tranlen = connectedDevice->numBytesSendingNow;
@@ -286,6 +287,14 @@ void MidiEngine::flushUSBMIDIOutput() {
 			g_p_usb_pipe[USB_CFG_PMIDI_BULK_OUT] = &g_usb_midi_send_utr[ip];
 			usb_send_start_rohan(NULL, USB_CFG_PMIDI_BULK_OUT, connectedDevice->dataSendingNow,
 			                     connectedDevice->numBytesSendingNow);
+
+			// TODO: this is fugly. we are using the main audio routine loop to pump midi data
+			// that doesn't fit the hardware buffer size.
+			// really we should restore the usbSendComplete callback and send
+			// additional data there.
+			if (connectedDevice->hasRingBuffered()) {
+				anythingInUSBOutputBuffer = true;
+			}
 		}
 
 		else if (potentiallyAHost) {
@@ -304,7 +313,7 @@ void MidiEngine::flushUSBMIDIOutput() {
 			// Make sure that's on a connected device - it probably would be...
 			while (true) {
 				ConnectedUSBMIDIDevice* connectedDevice = &connectedUSBMIDIDevices[ip][midiDeviceNumToSendTo];
-				if (connectedDevice->device && connectedDevice->numMessagesQueued) {
+				if (connectedDevice->device && connectedDevice->hasRingBuffered()) {
 					break; // We found a connected one
 				}
 				if (midiDeviceNumToSendTo == newStopSendingAfter) {
@@ -320,7 +329,7 @@ void MidiEngine::flushUSBMIDIOutput() {
 			while (true) {
 				ConnectedUSBMIDIDevice* connectedDevice = &connectedUSBMIDIDevices[ip][newStopSendingAfter];
 
-				if (connectedDevice->device && connectedDevice->numMessagesQueued) {
+				if (connectedDevice->device && connectedDevice->hasRingBuffered()) {
 					break; // We found a connected one
 				}
 
@@ -335,12 +344,8 @@ void MidiEngine::flushUSBMIDIOutput() {
 			while (true) {
 				ConnectedUSBMIDIDevice* connectedDevice = &connectedUSBMIDIDevices[ip][d];
 
-				if (connectedDevice->device && connectedDevice->numMessagesQueued) {
-					// Copy the data into the actual output buffer
-					connectedDevice->numBytesSendingNow = connectedDevice->numMessagesQueued << 2;
-					connectedDevice->numMessagesQueued = 0;
-					memcpy(connectedDevice->dataSendingNow, connectedDevice->preSendData,
-					       connectedDevice->numBytesSendingNow);
+				if (connectedDevice->device) {
+					connectedDevice->consumeBytes();
 				}
 				if (d == newStopSendingAfter) {
 					break;
@@ -704,6 +709,11 @@ void MidiEngine::midiSysexReceived(int ip, int d, int cable, uint8_t* data, int 
 		case 1:
 			numericDriver.displayPopup(HAVE_OLED ? "hello sysex" : "SYSX");
 			break;
+
+		case 2:
+			HIDSysex::sysexReceived(ip, d, cable, data, len);
+			break;
+
 
 		case 0x7f: // PONG, reserved
 		default:
