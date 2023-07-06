@@ -34,7 +34,11 @@ struct MIDIDeviceUSB;
 // TODO: increasing this even more doesn't work. For now this gives
 // maximum SysEx send size of 96 bytes including start/end bytes
 // (3 payload bytes per USB-MIDI message)
-#define MIDI_SEND_BUFFER_LEN 32
+#define MIDI_SEND_BUFFER_LEN_INNER 32
+
+
+#define MIDI_SEND_BUFFER_LEN_RING 128
+#define MIDI_SEND_RING_MASK 0x7f
 
 #ifdef __cplusplus
 /*A ConnectedUSBMIDIDevice is used directly to interface with the USB driver
@@ -57,6 +61,10 @@ public:
 	MIDIDeviceUSB* device[4]; // If NULL, then no device is connected here
 	void bufferMessage(uint32_t fullMessage);
 	void setup();
+
+	// move data from ring buffer to dataSendingNow, assuming it is free
+	bool consumeBytes();
+	bool hasRingBuffered();
 #else
 //warning - accessed as a C struct from usb driver
 struct ConnectedUSBMIDIDevice {
@@ -67,12 +75,16 @@ struct ConnectedUSBMIDIDevice {
 	uint8_t canHaveMIDISent;
 	uint16_t numBytesReceived;
 	uint8_t receiveData[64];
-	uint32_t preSendData[MIDI_SEND_BUFFER_LEN];
-	uint8_t dataSendingNow[MIDI_SEND_BUFFER_LEN * 4];
-	uint8_t numMessagesQueued;
 
+	uint8_t dataSendingNow[MIDI_SEND_BUFFER_LEN_INNER * 4];
 	// This will show a value after the general flush function is called, throughout other Devices being sent to before this one, and until we've completed our send
 	uint8_t numBytesSendingNow;
+
+	uint32_t sendDataRingBuf[MIDI_SEND_BUFFER_LEN_RING];
+	uint32_t ringBufWriteIdx;
+	uint32_t ringBufReadIdx;
+
+
 	uint8_t maxPortConnected;
 };
 
