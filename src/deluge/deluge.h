@@ -41,6 +41,11 @@ extern void sdCardEjected(void);
 
 extern void setTimeUSBInitializationEnds(int timeFromNow);
 
+extern char blogg[128][32];
+extern int bloggtid[128];
+extern int blog_id;
+void doBlogg(char *text);
+
 #ifdef __cplusplus
 }
 #endif
