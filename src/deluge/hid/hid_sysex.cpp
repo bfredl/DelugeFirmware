@@ -48,7 +48,7 @@ void HIDSysex::requestOLEDDisplay(int ip, int d, int cable, uint8_t* data, int l
 		reply[6] = col;
 
 		int packed = pack_8bit_to_7bit(reply+7, packed_block_size,
-									  &OLED::oledCurrentImage[row][block_size], block_size);
+									  &OLED::oledCurrentImage[row][0], block_size);
 		if (packed != packed_block_size) {
 		  OLED::popupText("eror: fail");
 		}
