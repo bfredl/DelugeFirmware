@@ -27,6 +27,7 @@
 #include "gui/ui/sound_editor.h"
 #include "gui/menu_item/mpe/zone_num_member_channels.h"
 #include "hid/display/oled.h"
+#include "util/functions.h"
 
 extern "C" {
 #include "RZA1/usb/r_usb_basic/src/driver/inc/r_usb_basic_define.h"
@@ -568,12 +569,13 @@ bool ConnectedUSBMIDIDevice::consumeBytes() {
 	}
 
 	int i = 0;
-	for (i = 0; i < queued; i++) {
+	int to_send = getMin(queued, MIDI_SEND_BUFFER_LEN_INNER);
+	for (i = 0; i < to_send; i++) {
 		memcpy(dataSendingNow+(i*4), &sendDataRingBuf[ringBufReadIdx&MIDI_SEND_RING_MASK], 4);
 		ringBufReadIdx++;
 	}
 
-	numBytesSendingNow = queued*4;
+	numBytesSendingNow = to_send*4;
 	return true;
 }
 
