@@ -120,6 +120,29 @@ bool inInterrupt = false;
 
 bool allowSomeUserActionsEvenWhenInCardRoutine = false;
 
+extern "C" {
+
+char blogg[128][32];
+int bloggtid[128];
+int blog_id = 0;
+void doBlogg(char *text) {
+	int myId = blog_id;
+	if (blog_id < (0x7ffffff0)) {
+		blog_id++;
+	}
+
+	if (myId >= 128) {
+		// it's so over
+		return;
+	}
+
+	/// we're so back
+	bloggtid[myId] = (int)AudioEngine::audioSampleTimer;
+	memcpy(blogg[myId], text, 32);
+}
+
+}
+
 extern "C" void timerGoneOff(void) {
 	inInterrupt = true;
 	cvEngine.updateGateOutputs();

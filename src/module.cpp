@@ -14,6 +14,8 @@
 #include "util/functions.h"
 #include "hid/display/oled.h"
 #include "gui/ui_timer_manager.h"
+#include "io/midi/midi_engine.h"
+#include "deluge.h"
 
 __attribute__ ((aligned (CACHE_LINE_SIZE))) uint8_t module_data[64*1024];  // gimme some bss
 
@@ -25,6 +27,27 @@ static inline uint32_t __ac_X31_hash_string(const unsigned char *s, int len)
 		h = (h << 5) - h + (uint32_t)s[i];
 	}
 	return h;
+}
+
+void bloggSvar(int x) {
+	int len;
+	uint8_t buffer[48];
+	buffer[0] = 0xf0;
+	buffer[1] = 0x67;
+	buffer[2] = 0x40;
+	buffer[3] = x;
+	if (x > blog_id) {
+		buffer[4] = 0xf7;
+		len = 5;
+	} else {
+		intToString(bloggtid[x], (char *)(buffer+4), 8);
+		int slen = strnlen(blogg[x], 32);
+		memcpy(buffer+12, blogg[x], slen);
+		buffer[12+slen] = 0xf7;
+		len = 13+slen; // max 45 (schablonartat)
+	}
+
+	midiEngine.sendSysex(0, 0, 0, buffer, len);
 }
 
 void handle_sysex_module(uint8_t *s, int size) {
@@ -92,6 +115,8 @@ void handle_sysex_module(uint8_t *s, int size) {
 	} else if (c == 25) {
 		uiTimerManager.unsetTimer(TIMER_MODULE);
 		timer_module_cb = NULL;
+	} else if (c == 26) {
+		bloggSvar(x);
 	} else {
 		OLED::popupText("u w0t m8", true);
 	}
