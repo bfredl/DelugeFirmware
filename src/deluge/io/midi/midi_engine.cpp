@@ -287,6 +287,14 @@ void MidiEngine::flushUSBMIDIOutput() {
 			g_p_usb_pipe[USB_CFG_PMIDI_BULK_OUT] = &g_usb_midi_send_utr[ip];
 			usb_send_start_rohan(NULL, USB_CFG_PMIDI_BULK_OUT, connectedDevice->dataSendingNow,
 			                     connectedDevice->numBytesSendingNow);
+
+			// TODO: this is fugly. we are using the main audio routine loop to pump midi data
+			// that doesn't fit the hardware buffer size.
+			// really we should restore the usbSendComplete callback and send
+			// additional data there.
+			if (connectedDevice->hasRingBuffered()) {
+				anythingInUSBOutputBuffer = true;
+			}
 		}
 
 		else if (potentiallyAHost) {
