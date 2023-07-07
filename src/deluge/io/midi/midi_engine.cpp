@@ -31,6 +31,8 @@
 
 #include "hid/display/oled.h"
 
+#include "deluge.h"
+
 extern "C" {
 #include "RZA1/uart/sio_char.h"
 // #include "cache/cache.h"
@@ -279,6 +281,10 @@ void MidiEngine::flushUSBMIDIOutput() {
 			if (!connectedDevice->consumeBytes()) {
 				continue;
 			}
+
+			char bufer[32] = "dosend: ";
+			intToString(connectedDevice->numBytesSendingNow, bufer+8, 2);
+			doBlogg(bufer);
 
 			g_usb_midi_send_utr[ip].keyword = USB_CFG_PMIDI_BULK_OUT;
 			g_usb_midi_send_utr[ip].tranlen = connectedDevice->numBytesSendingNow;
@@ -745,6 +751,14 @@ void MidiEngine::sendSysex(int ip, int d, int cable, uint8_t* data, int len) {
 			return;
 		}
 
+		{
+			char bufer[32] = "prewri: ";
+			intToString(connectedDevice->ringBufWriteIdx, bufer+8, 5);
+			bufer[8+5] = ' ';
+			intToString(connectedDevice->ringBufReadIdx, bufer+8+6, 5);
+			doBlogg(bufer);
+		}
+
 		int pos = 0;
 		while (pos < len) {
 			int status, byte0 = 0, byte1 = 0, byte2 = 0;
@@ -769,6 +783,15 @@ void MidiEngine::sendSysex(int ip, int d, int cable, uint8_t* data, int len) {
 			uint32_t packed = ((uint32_t)byte2 << 24) | ((uint32_t)byte1 << 16) | ((uint32_t)byte0 << 8) | status;
 			connectedDevice->bufferMessage(packed);
 		}
+
+		{
+			char bufer[32] = "writen: ";
+			intToString(connectedDevice->ringBufWriteIdx, bufer+8, 5);
+			bufer[8+5] = ' ';
+			intToString(connectedDevice->ringBufReadIdx, bufer+8+6, 5);
+			doBlogg(bufer);
+		}
+
 	}
 }
 

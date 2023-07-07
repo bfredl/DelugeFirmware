@@ -27,6 +27,8 @@
 #include "gui/ui/sound_editor.h"
 #include "gui/menu_item/mpe/zone_num_member_channels.h"
 #include "hid/display/oled.h"
+#include "util/functions.h"
+#include "deluge.h"
 
 extern "C" {
 #include "RZA1/usb/r_usb_basic/src/driver/inc/r_usb_basic_define.h"
@@ -563,6 +565,13 @@ bool ConnectedUSBMIDIDevice::hasRingBuffered() {
 bool ConnectedUSBMIDIDevice::consumeBytes() {
 	// TÖDÖ: use the right uint magic to make this wrap around nicely
 	int queued = ringBufWriteIdx-ringBufReadIdx;
+
+	char bufer[32] = "consum:";
+	intToString(ringBufWriteIdx, bufer+8, 5);
+	bufer[8+5] = ' ';
+	intToString(ringBufReadIdx, bufer+8+6, 5);
+	doBlogg(bufer);
+
 	if (queued <= 0) {
 		return false;
 	}
