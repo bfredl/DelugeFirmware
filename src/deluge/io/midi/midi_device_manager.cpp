@@ -577,7 +577,7 @@ bool ConnectedUSBMIDIDevice::consumeBytes() {
 	}
 
 	int i = 0;
-	for (i = 0; i < queued; i++) {
+	for (i = 0; i < getMin(queued, MIDI_SEND_BUFFER_LEN_INNER); i++) {
 		memcpy(dataSendingNow+(i*4), &sendDataRingBuf[ringBufReadIdx&MIDI_SEND_RING_MASK], 4);
 		ringBufReadIdx++;
 	}
