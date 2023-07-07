@@ -31,14 +31,13 @@ struct MIDIDeviceUSB;
 #endif
 
 // size in 32-bit messages
-// TODO: increasing this even more doesn't work. For now this gives
-// maximum SysEx send size of 96 bytes including start/end bytes
-// (3 payload bytes per USB-MIDI message)
+// NOTE: increasing this even more doesn't work.
+// Looks like a hardware limitation (maybe we more in FS mode)?
 #define MIDI_SEND_BUFFER_LEN_INNER 32
 
-
-#define MIDI_SEND_BUFFER_LEN_RING 128
-#define MIDI_SEND_RING_MASK 0x7f
+// MUST be an exact power of two
+#define MIDI_SEND_BUFFER_LEN_RING 1024
+#define MIDI_SEND_RING_MASK (MIDI_SEND_BUFFER_LEN_RING-1)
 
 #ifdef __cplusplus
 /*A ConnectedUSBMIDIDevice is used directly to interface with the USB driver
