@@ -19,6 +19,10 @@
 
 #include "RZA1/system/r_typedefs.h"
 
+#ifndef __cplusplus
+#include "stdbool.h"
+#endif
+
 /*
  * ================= DEBUGGING TEXT OUTPUT =================
  *
@@ -63,3 +67,12 @@ int uartGetTxBufferFullnessByItem(int item);
 int uartGetTxBufferSpace(int item);
 
 extern void tx_interrupt(int item);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern bool use_virtual_uart;
+void virtual_uart_print(char* msg, int ln);
+#ifdef __cplusplus
+}
+#endif

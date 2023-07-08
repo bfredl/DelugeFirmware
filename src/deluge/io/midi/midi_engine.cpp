@@ -204,7 +204,11 @@ uint32_t timeLastBRDY[USB_NUM_USBIP];
 void brdyOccurred(int ip) {
 	timeLastBRDY[ip] = DMACnNonVolatile(SSI_TX_DMA_CHANNEL).CRSA_n; // Reading this not as volatile works fine
 }
+
+bool use_virtual_uart = false;
 }
+
+static MIDIDevice* virtual_uart = NULL;
 
 MidiEngine midiEngine{};
 
@@ -722,6 +726,50 @@ void MidiEngine::checkIncomingUsbSysex(uint8_t const* msg, int ip, int d, int ca
 	}
 }
 
+void MidiEngine::debugSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
+	if (len < 6) {
+		return;
+	}
+
+	// first three bytes are already used, next is command
+	switch (data[3]) {
+	case 0:
+		if (data[4] == 1) {
+			virtual_uart = device;
+			use_virtual_uart = true;
+		}
+		else if (data[4] == 0) {
+			virtual_uart = nullptr;
+			use_virtual_uart = false;
+		}
+		break;
+	}
+}
+
+void virtual_uart_print(char* msg, int ln) {
+	if (!msg) {
+		return; // Do not do that
+	}
+	// data[4]: reserved, could serve as a message identifier to filter messages per category
+	uint8_t reply_hdr[5] = {0xf0, 0x7d, 0x03, 0x40, 0x00};
+	uint8_t* reply = midiEngine.sysex_fmt_buffer;
+	memcpy(reply, reply_hdr, 5);
+	int len = strlen(msg);
+	len = getMin(len, (sizeof midiEngine.sysex_fmt_buffer) - 7);
+	memcpy(reply + 5, msg, len);
+	for (int i = 0; i < len; i++) {
+		reply[5 + i] &= 0x7F; // only ascii debug messages
+	}
+	if (ln) {
+		reply[5 + len] = '\n';
+		len++;
+	}
+
+	reply[5 + len] = 0xf7;
+
+	virtual_uart->sendSysex(reply, len + 6);
+}
+
 void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 	if (len < 4) {
 		return;
@@ -745,6 +793,12 @@ void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 
 		case 2:
 			HIDSysex::sysexReceived(device, data, len);
+			break;
+
+		case 3:
+			// debug namespace: for sysex calls useful for debugging purposes
+			// and/or might require a debug build to function.
+			debugSysexReceived(device, data, len);
 			break;
 
 		case 0x7f: // PONG, reserved

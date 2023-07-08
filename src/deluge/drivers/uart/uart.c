@@ -30,6 +30,10 @@
 
 void uartPrintln(char const* output) {
 #if ENABLE_TEXT_OUTPUT
+	if (use_virtual_uart) {
+		virtual_uart_print(output, true);
+		return;
+	}
 #if HAVE_RTT
 	SEGGER_RTT_WriteString(0, output);
 	SEGGER_RTT_WriteString(0, "\r\n");
@@ -62,6 +66,10 @@ void uartPrintNumberSameLine(int number) {
 
 void uartPrint(char const* output) {
 #if ENABLE_TEXT_OUTPUT
+	if (use_virtual_uart) {
+		virtual_uart_print(output, false);
+		return;
+	}
 #if HAVE_RTT
 	SEGGER_RTT_WriteString(0, output);
 #else
