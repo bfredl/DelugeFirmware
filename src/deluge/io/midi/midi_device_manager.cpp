@@ -579,6 +579,10 @@ bool ConnectedUSBMIDIDevice::consumeBytes() {
 		max_size = MIDI_SEND_BUFFER_LEN_INNER_HOST;
 	}
 
+	if (midiEngine.size_override > 0) {
+		max_size = midiEngine.size_override;
+	}
+
 	int to_send = getMin(queued, max_size);
 	for (i = 0; i < to_send; i++) {
 		memcpy(dataSendingNow + (i * 4), &sendDataRingBuf[ringBufReadIdx & MIDI_SEND_RING_MASK], 4);
