@@ -44,7 +44,6 @@ void usb_cstd_usb_task();
 #include "RZA1/usb/r_usb_hmidi/src/inc/r_usb_hmidi.h"
 
 extern uint16_t g_usb_peri_connected;
-extern uint16_t g_usb_usbmode;
 
 uint8_t stopSendingAfterDeviceNum[USB_NUM_USBIP];
 uint8_t usbDeviceNumBeingSentToNow[USB_NUM_USBIP];
