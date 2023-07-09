@@ -26,8 +26,8 @@ void MidiTest::beginSession(MenuItem* navigatedBackwardFrom) {
 	soundEditor.currentValue = 0;
 }
 
-static const int numValues = 6;
-static const char *itemNames[] = {"short sysex", "long sysex", "tetra rep", "tetra ask", "size override", "send mode"};
+static const int numValues = 7;
+static const char *itemNames[] = {"short sysex", "long sysex", "tetra rep", "tetra ask", "size override", "send mode", "show size"};
 
 void MidiTest::drawValue() {
 #if HAVE_OLED

@@ -249,6 +249,12 @@ void MIDIDevice::doSysexTest(int kind) {
 		} else if (midiEngine.size_override == 1) {
 			midiEngine.size_override = 32;
 			OLED::popupText("size: 32", true);
+		} else if (midiEngine.size_override == 32) {
+			midiEngine.size_override = 8;
+			OLED::popupText("size: 8", true);
+		} else if (midiEngine.size_override == 8) {
+			midiEngine.size_override = 2;
+			OLED::popupText("size: 2", true);
 		} else {
 			midiEngine.size_override = 16;
 			OLED::popupText("size: 16", true);
@@ -264,7 +270,15 @@ void MIDIDevice::doSysexTest(int kind) {
 			midiEngine.send_mode = 0;
 			OLED::popupText("send: whatwas", true);
 		}
+	} else if (kind == 6) {
+		char buffer[13] = "som sas:";
 
+		auto * usbthis= dynamic_cast<MIDIDeviceUSB *>(this);
+		if (usbthis) {
+			intToString(usbthis->maxPacketSize, buffer+8, 3);
+		}
+
+		OLED::popupText(buffer, 1);
 	}
 
 
