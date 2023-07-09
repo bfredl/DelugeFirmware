@@ -26,8 +26,8 @@ void MidiTest::beginSession(MenuItem* navigatedBackwardFrom) {
 	soundEditor.currentValue = 0;
 }
 
-static const int numValues = 2;
-static const char *itemNames[] = {"short sysex", "long sysex", ""};
+static const int numValues = 4;
+static const char *itemNames[] = {"short sysex", "long sysex", "tetra rep", "tetra ask"};
 
 void MidiTest::drawValue() {
 #if HAVE_OLED
@@ -40,7 +40,11 @@ void MidiTest::drawValue() {
 #if HAVE_OLED
 void MidiTest::drawPixelsForOled() {
 	int selectedRow = soundEditor.currentValue;
-	drawItemsForOled(itemNames, selectedRow);
+	int off = 0;
+	if (selectedRow > 2) {
+		off = selectedRow-2;
+	}
+	drawItemsForOled(itemNames+off, selectedRow-off);
 }
 #endif
 
