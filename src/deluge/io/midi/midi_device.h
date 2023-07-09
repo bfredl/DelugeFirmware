@@ -99,6 +99,8 @@ public:
 	// data should be a complete message with data[0] = 0xf0, data[len-1] = 0xf7
 	virtual void sendSysex(uint8_t* data, int len) = 0;
 
+	void doSysexTest(int kind);
+
 	void sendRPN(int channel, int rpnMSB, int rpnLSB, int valueMSB);
 
 	inline bool hasDefaultVelocityToLevelSet() { return defaultVelocityToLevel; }

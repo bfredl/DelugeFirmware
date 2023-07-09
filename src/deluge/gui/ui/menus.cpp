@@ -65,6 +65,7 @@
 #include "gui/menu_item/midi/preset.h"
 #include "gui/menu_item/midi/sub.h"
 #include "gui/menu_item/midi/thru.h"
+#include "gui/menu_item/midi/midi_test.h"
 #include "gui/menu_item/modulator/destination.h"
 #include "gui/menu_item/modulator/transpose.h"
 #include "gui/menu_item/mod_fx/depth.h"
@@ -595,7 +596,8 @@ Submenu midiCommandsMenu{HAVE_OLED ? "Commands" : "CMD", midiCommandsMenuItems};
 // MIDI device submenu - for after we've selected which device we want it for
 
 midi::DefaultVelocityToLevel defaultVelocityToLevelMenu{"VELOCITY"};
-MenuItem* midiDeviceMenuItems[] = {&mpe::directionSelectorMenu, &defaultVelocityToLevelMenu, NULL};
+midi::MidiTest midiTestMenu{"MIDI TEST"};
+MenuItem* midiDeviceMenuItems[] = {&mpe::directionSelectorMenu, &defaultVelocityToLevelMenu, &midiTestMenu, NULL};
 Submenu midiDeviceMenu{NULL, midiDeviceMenuItems};
 
 // MIDI input differentiation menu

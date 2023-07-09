@@ -28,6 +28,7 @@
 #include "io/midi/midi_device.h"
 #include "io/midi/midi_device_manager.h"
 #include "hid/hid_sysex.h"
+#include "hid/display/oled.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -755,10 +756,55 @@ void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 			break;
 
 		case 0x7f: // PONG, reserved
+			if (doing_sysex_test) {
+				checkSysexTest(device, data, len);
+			}
 		default:
 			break;
 		}
 	}
+}
+
+void MidiEngine::checkSysexTest(MIDIDevice* device, uint8_t* data, int len) {
+	int kind = data[3];
+	bool rightLen = false;
+	bool rightData = false;
+	if (kind == 0) {
+		if (len == 8) {
+			rightLen = true;
+			uint8_t sysex[] = {0xf0, 0x7d, 0x7f, 0, 'U', 'w', 'U', 0xf7};
+			if (!memcmp(sysex, data, 8)) {
+				rightData = true;
+			}
+		}
+	}
+	else if (kind == 1) {
+		if (len == 805) {
+			rightLen = true;
+			if (!memcmp(sysex_test_buffer, data, 805)) {
+				rightData = true;
+			}
+		}
+	} else {
+		return;
+	}
+
+	char msg[22] = "sysex test short fail";
+	if (kind == 1) {
+		memcpy(msg+11, "long ", 5);
+	}
+
+	if (rightData) {
+		memcpy(msg+17, "pass", 4);
+	} else if (rightLen) {
+		memcpy(msg+17, "dirt", 4);
+	}
+
+#if HAVE_OLED
+	OLED::popupText(msg, true);
+#else
+	numeric_driver.setScrollingText(msg);
+#endif
 }
 
 void MidiEngine::checkIncomingUsbMidi() {
