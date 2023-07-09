@@ -341,7 +341,7 @@ static void usb_hmidi_check_result(usb_utr_t* ptr, uint16_t unused, uint16_t sta
 
 #define USB_DEBUGPRINT_PP
 
-void giveDetailsOfDeviceBeingSetUp(int ip, char const* name, uint16_t vendorId, uint16_t productId);
+void giveDetailsOfDeviceBeingSetUp(int ip, char const* name, uint16_t vendorId, uint16_t productId, uint8_t maxpacketSize);
 
 /******************************************************************************
  Function Name   : usb_hhid_enumeration_sequence
@@ -435,9 +435,10 @@ static void usb_hmidi_enumeration_sequence(usb_utr_t* mess)
             }
 
             // Send some info about this device to the device manager
+            uint8_t maxpacketSize = g_p_usb_hmidi_device_table[USB_CFG_USE_USBIP][7];
             uint16_t vendorId  = *(uint16_t*)&g_p_usb_hmidi_device_table[USB_CFG_USE_USBIP][8];
             uint16_t productId = *(uint16_t*)&g_p_usb_hmidi_device_table[USB_CFG_USE_USBIP][10];
-            giveDetailsOfDeviceBeingSetUp(USB_CFG_USE_USBIP, deviceName, vendorId, productId);
+            giveDetailsOfDeviceBeingSetUp(USB_CFG_USE_USBIP, deviceName, vendorId, productId, maxpacketSize);
 
             p_desc = g_p_usb_hmidi_config_table[mess->ip];
 

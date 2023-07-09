@@ -146,6 +146,7 @@ public:
 	void sendMCMsNowIfNeeded();
 	uint8_t needsToSendMCMs;
 	uint8_t portNumber;
+	int maxPacketSize = -1;
 };
 
 class MIDIDeviceUSBHosted final : public MIDIDeviceUSB {

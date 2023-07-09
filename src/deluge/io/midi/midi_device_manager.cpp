@@ -48,6 +48,7 @@ struct {
 	String name{};
 	uint16_t vendorId;
 	uint16_t productId;
+	uint8_t maxPacketSize;
 } usbDeviceCurrentlyBeingSetUp[USB_NUM_USBIP] = {};
 
 //This class represents a thing you can send midi too,
@@ -72,11 +73,12 @@ void slowRoutine() {
 	}
 }
 
-extern "C" void giveDetailsOfDeviceBeingSetUp(int ip, char const* name, uint16_t vendorId, uint16_t productId) {
+extern "C" void giveDetailsOfDeviceBeingSetUp(int ip, char const* name, uint16_t vendorId, uint16_t productId, uint8_t maxpacketSize) {
 
 	usbDeviceCurrentlyBeingSetUp[ip].name.set(name); // If that fails, it'll just have a 0-length name
 	usbDeviceCurrentlyBeingSetUp[ip].vendorId = vendorId;
 	usbDeviceCurrentlyBeingSetUp[ip].productId = productId;
+	usbDeviceCurrentlyBeingSetUp[ip].maxPacketSize = maxpacketSize;
 
 	uartPrint("name: ");
 	uartPrintln(name);
@@ -87,7 +89,7 @@ extern "C" void giveDetailsOfDeviceBeingSetUp(int ip, char const* name, uint16_t
 }
 
 // name can be NULL, or an empty String
-MIDIDeviceUSBHosted* getOrCreateHostedMIDIDeviceFromDetails(String* name, uint16_t vendorId, uint16_t productId) {
+MIDIDeviceUSBHosted* getOrCreateHostedMIDIDeviceFromDetails(String* name, uint16_t vendorId, uint16_t productId, int maxPacketSize = -1) {
 
 	// Do we know any details about this device already?
 
@@ -142,6 +144,7 @@ MIDIDeviceUSBHosted* getOrCreateHostedMIDIDeviceFromDetails(String* name, uint16
 	}
 	device->vendorId = vendorId;
 	device->productId = productId;
+	device->maxPacketSize = maxPacketSize;
 
 	// Store record of this device
 	int error = hostedMIDIDevices.insertElement(device, i); // We made sure, above, that there's space
@@ -194,7 +197,8 @@ void recountSmallestMPEZones() {
 extern "C" void hostedDeviceConfigured(int ip, int midiDeviceNum) {
 	MIDIDeviceUSBHosted* device = getOrCreateHostedMIDIDeviceFromDetails(&usbDeviceCurrentlyBeingSetUp[ip].name,
 	                                                                     usbDeviceCurrentlyBeingSetUp[ip].vendorId,
-	                                                                     usbDeviceCurrentlyBeingSetUp[ip].productId);
+	                                                                     usbDeviceCurrentlyBeingSetUp[ip].productId,
+																		 usbDeviceCurrentlyBeingSetUp[ip].maxPacketSize);
 
 	usbDeviceCurrentlyBeingSetUp[ip].name.clear(); // Save some memory. Not strictly necessary
 
