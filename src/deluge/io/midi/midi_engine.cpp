@@ -88,13 +88,29 @@ void usbSendComplete(int ip) {
 	if (inHostMode) {
 
 		// check if there was more to send on the same device
-		bool has_more = connectedDevice->consumeBytes();
+		bool has_more = connectedDevice->hasRingBuffered();
 		if (has_more) {
-			// TODO: do some cooperative scheduling here. so if there is a flood of data
-			// on connected device 1 and we just want to send a few notes on device 2,
-			// make sure device 2 ges a fair shot now and then
-			flushUSBMIDIToHostedDevice(ip, midiDeviceNum);
-			return;
+			if (midiEngine.send_mode == 1) {
+		        connectedDevice->consumeBytes();
+
+				g_usb_midi_send_utr[USB_CFG_USE_USBIP].tranlen = connectedDevice->numBytesSendingNow;
+				g_usb_midi_send_utr[USB_CFG_USE_USBIP].p_tranadr = connectedDevice->dataSendingNow;
+
+				int d = midiDeviceNum;
+				int pipeNumber = g_usb_hmidi_tmp_ep_tbl[USB_CFG_USE_USBIP][d][0];
+				usb_send_start_rohan(&g_usb_midi_send_utr[USB_CFG_USE_USBIP], pipeNumber, connectedDevice->dataSendingNow,
+									 connectedDevice->numBytesSendingNow);
+				return;
+			} else if (midiEngine.send_mode == 2) {
+				anythingInUSBOutputBuffer = true;
+			} else {
+		        connectedDevice->consumeBytes();
+				// TODO: do some cooperative scheduling here. so if there is a flood of data
+				// on connected device 1 and we just want to send a few notes on device 2,
+				// make sure device 2 ges a fair shot now and then
+				flushUSBMIDIToHostedDevice(ip, midiDeviceNum);
+				return;
+			}
 		}
 
 		// If that was the last device we were going to send to, that send's been done, so we can just get out.

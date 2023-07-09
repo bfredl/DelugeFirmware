@@ -242,6 +242,29 @@ void MIDIDevice::doSysexTest(int kind) {
 		uint8_t buffer[5] = {0xf0, 0x01, 0x26, 0x06, 0xf7};
 		OLED::popupText("request", true);
 		sendSysex(buffer, sizeof buffer);
+	} else if (kind == 4) {
+		if (midiEngine.size_override == 16) {
+			midiEngine.size_override = 1;
+			OLED::popupText("size: one? really!", true);
+		} else if (midiEngine.size_override == 1) {
+			midiEngine.size_override = 32;
+			OLED::popupText("size: 32", true);
+		} else {
+			midiEngine.size_override = 16;
+			OLED::popupText("size: 16", true);
+		}
+	} else if (kind == 5) {
+		if (midiEngine.send_mode == 0) {
+			midiEngine.send_mode = 1;
+			OLED::popupText("send: eins", true);
+		} else if (midiEngine.send_mode == 1) {
+			midiEngine.send_mode = 2;
+			OLED::popupText("send: lazy", true);
+		} else {
+			midiEngine.send_mode = 0;
+			OLED::popupText("send: whatwas", true);
+		}
+
 	}
 
 

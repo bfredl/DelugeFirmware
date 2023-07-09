@@ -71,6 +71,9 @@ public:
 	bool has_tetra;
 	int tetra_len;
 
+	int size_override = -1;
+	int send_mode = 0;
+
 private:
 	uint8_t serialMidiInput[3];
 	uint8_t numSerialMidiInput;
