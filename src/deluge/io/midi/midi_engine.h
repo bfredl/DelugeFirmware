@@ -63,6 +63,12 @@ public:
 
 	bool midiThru;
 
+    // TODO: malloc me on first use
+    uint8_t sysex_test_buffer[1024];
+	bool doing_sysex_test;
+	void checkSysexTest(MIDIDevice *dev, uint8_t *data, int len);
+
+
 private:
 	uint8_t serialMidiInput[3];
 	uint8_t numSerialMidiInput;

@@ -213,6 +213,26 @@ void MIDIDevice::writeToFile(char const* tagName) {
 	storageManager.writeClosingTag(tagName);
 }
 
+void MIDIDevice::doSysexTest(int kind) {
+	midiEngine.doing_sysex_test = true;
+
+	if (kind == 0) {
+		uint8_t sysex[] = {0xf0, 0x7d, 0x7f, 0, 'U', 'w', 'U', 0xf7};
+		sendSysex(sysex, sizeof sysex);
+	} else if (kind == 1) {
+		uint8_t *sysex_buf = midiEngine.sysex_test_buffer;
+		uint8_t sysex_hdr[] = {0xf0, 0x7d, 0x7f, 1};
+		memcpy(sysex_buf, sysex_hdr, 4);
+		for (int i = 0; i < 800; i++) {
+			sysex_buf[4+i] = (i * (i + 1)) & 0x7f;
+		}
+		sysex_buf[804] = 0xf7;
+		sendSysex(sysex_buf, 805);
+	}
+
+
+}
+
 int MIDIPort::channelToZone(int inputChannel) {
 	if (mpeLowerZoneLastMemberChannel && mpeLowerZoneLastMemberChannel >= inputChannel) {
 		return MIDI_CHANNEL_MPE_LOWER_ZONE;
