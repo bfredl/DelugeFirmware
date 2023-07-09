@@ -92,7 +92,12 @@ void usbSendComplete(int ip) {
 			// TODO: do some cooperative scheduling here. so if there is a flood of data
 			// on connected device 1 and we just want to send a few notes on device 2,
 			// make sure device 2 ges a fair shot now and then
-			flushUSBMIDIToHostedDevice(ip, midiDeviceNum);
+
+			g_usb_midi_send_utr[USB_CFG_USE_USBIP].tranlen = connectedDevice->numBytesSendingNow;
+			g_usb_midi_send_utr[USB_CFG_USE_USBIP].p_tranadr = connectedDevice->dataSendingNow;
+			int pipeNumber = g_usb_hmidi_tmp_ep_tbl[USB_CFG_USE_USBIP][midiDeviceNum][0];
+			usb_send_start_rohan(&g_usb_midi_send_utr[USB_CFG_USE_USBIP], pipeNumber, connectedDevice->dataSendingNow,
+								 connectedDevice->numBytesSendingNow);
 			return;
 		}
 
