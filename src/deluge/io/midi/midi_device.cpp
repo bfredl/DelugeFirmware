@@ -23,6 +23,7 @@
 #include "model/song/song.h"
 #include "io/midi/midi_engine.h"
 #include "gui/ui/sound_editor.h"
+#include "hid/display/oled.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -228,6 +229,19 @@ void MIDIDevice::doSysexTest(int kind) {
 		}
 		sysex_buf[804] = 0xf7;
 		sendSysex(sysex_buf, 805);
+	} else if (kind == 2) {
+		if (!midiEngine.has_tetra) {
+			OLED::popupText("no tetra!");
+			return;
+		}
+		char buffer[15];
+		intToString(midiEngine.tetra_len, buffer, 4);
+		OLED::popupText(buffer, true);
+		sendSysex(midiEngine.sysex_tetra_buffer, midiEngine.tetra_len);
+	} else if (kind == 3) {
+		uint8_t buffer[5] = {0xf0, 0x01, 0x26, 0x06, 0xf7};
+		OLED::popupText("request", true);
+		sendSysex(buffer, sizeof buffer);
 	}
 
 

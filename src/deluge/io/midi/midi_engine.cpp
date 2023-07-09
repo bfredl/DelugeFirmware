@@ -759,6 +759,17 @@ void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 			break;
 		}
 	}
+	else if (data[1] == 0x01 && data[2] == 0x26) {
+		has_tetra = true;
+		if (len < 100) return;
+		tetra_len = len;
+		memcpy(sysex_tetra_buffer, data, len);
+
+		char buffer[15];
+		buffer[0] = 'T';
+		intToString(midiEngine.tetra_len, 1+buffer, 4);
+		OLED::popupText(buffer, true);
+	}
 }
 
 void MidiEngine::checkSysexTest(MIDIDevice* device, uint8_t* data, int len) {

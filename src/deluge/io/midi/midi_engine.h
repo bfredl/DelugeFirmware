@@ -67,7 +67,9 @@ public:
     uint8_t sysex_test_buffer[1024];
 	bool doing_sysex_test;
 	void checkSysexTest(MIDIDevice *dev, uint8_t *data, int len);
-
+    uint8_t sysex_tetra_buffer[1536];
+	bool has_tetra;
+	int tetra_len;
 
 private:
 	uint8_t serialMidiInput[3];
