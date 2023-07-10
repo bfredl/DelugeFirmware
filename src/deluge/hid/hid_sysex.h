@@ -7,4 +7,9 @@ void request7SegDisplay(MIDIDevice* device, uint8_t* data, int32_t len);
 void sysexReceived(MIDIDevice* device, uint8_t* data, int32_t len);
 void sendOLEDData(MIDIDevice* device, bool rle);
 
+void requestPadLeds(MIDIDevice* device, uint8_t* data, int32_t len);
+void sendPadFlash(MIDIDevice* device, int32_t x, int32_t y, int32_t color);
+
+extern MIDIDevice* padBlinkDevice;
+
 } // namespace HIDSysex

@@ -113,13 +113,7 @@ void setupAudioClipCollapseOrExplodeAnimation(AudioClip* clip);
 
 void setGreyoutAmount(float newAmount);
 
-static inline void flashMainPad(int32_t x, int32_t y, int32_t color = 0) {
-	if (color > 0) {
-		bufferPICUart(10 + color);
-	}
-
-	bufferPICUart(24 + y + (x * kDisplayHeight));
-}
+void flashMainPad(int32_t x, int32_t y, int32_t color = 0, bool sysex = true);
 
 inline void sendRGBForOneCol(int32_t x);
 void setTimerForSoon();

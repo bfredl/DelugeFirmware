@@ -30,6 +30,7 @@
 #include "gui/waveform/waveform_renderer.h"
 #include "hid/display/numeric_driver.h"
 #include "hid/display/oled.h"
+#include "hid/hid_sysex.h"
 #include "model/clip/audio_clip.h"
 #include "model/clip/instrument_clip.h"
 #include "model/sample/sample.h"
@@ -190,7 +191,7 @@ void setTickSquares(const uint8_t* squares, const uint8_t* colours) {
 					colour = 0b00000001;
 				}
 
-				PadLEDs::flashMainPad(squares[y], y, colour);
+				PadLEDs::flashMainPad(squares[y], y, colour, false);
 			}
 		}
 	}
@@ -211,6 +212,18 @@ void setTickSquares(const uint8_t* squares, const uint8_t* colours) {
 			}
 			uartFlushIfNotSending(UART_ITEM_PIC_PADS);
 		}
+	}
+}
+
+void flashMainPad(int32_t x, int32_t y, int32_t color, bool sysex) {
+	if (color > 0) {
+		bufferPICUart(10 + color);
+	}
+
+	bufferPICUart(24 + y + (x * kDisplayHeight));
+
+	if (sysex && HIDSysex::padBlinkDevice) {
+		HIDSysex::sendPadFlash(HIDSysex::padBlinkDevice, x, y, color);
 	}
 }
 

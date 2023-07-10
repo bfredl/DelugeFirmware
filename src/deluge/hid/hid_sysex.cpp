@@ -1,8 +1,10 @@
 #include "hid/hid_sysex.h"
 #include "hid/display/oled.h"
+#include "hid/led/pad_leds.h"
 #include "io/midi/midi_device.h"
 #include "io/midi/midi_engine.h"
 #include "util/pack.h"
+#include <algorithm>
 #include <cstring>
 
 void HIDSysex::sysexReceived(MIDIDevice* device, uint8_t* data, int32_t len) {
@@ -17,6 +19,10 @@ void HIDSysex::sysexReceived(MIDIDevice* device, uint8_t* data, int32_t len) {
 
 	case 1:
 		request7SegDisplay(device, data, len);
+		break;
+
+	case 2: // request RGB pads
+		requestPadLeds(device, data, len);
 		break;
 
 	default:
@@ -68,4 +74,36 @@ void HIDSysex::request7SegDisplay(MIDIDevice* device, uint8_t* data, int32_t len
 		device->sendSysex(reply, packed_data_size + 7);
 	}
 #endif
+}
+
+MIDIDevice* HIDSysex::padBlinkDevice;
+
+void HIDSysex::requestPadLeds(MIDIDevice* device, uint8_t* data, int32_t len) {
+	if (data[4] == 0) {
+		// pass
+	} else if (data[4] == 1) {
+		padBlinkDevice = device;
+	} else {
+		return;
+	}
+
+	const int32_t block_size = 144*3;
+	const int32_t packed_block_size = 494;
+
+	uint8_t reply_hdr[5] = {0xf0, 0x7e, 0x02, 0x42, 0x00};
+	uint8_t* reply = midiEngine.sysex_fmt_buffer;
+	memcpy(reply, reply_hdr, 5);
+
+	int32_t packed = pack_8bit_to_7bit(reply + 6, packed_block_size, (uint8_t *)PadLEDs::image, block_size);
+	if (packed != packed_block_size) {
+		OLED::popupText("eror: fail");
+	}
+	reply[6 + packed_block_size] = 0xf7; // end of transmission
+	device->sendSysex(reply, packed_block_size + 7);
+}
+
+void HIDSysex::sendPadFlash(MIDIDevice* device, int32_t x, int32_t y, int32_t color) {
+	color = std::min<int32_t>(color, 127);
+	uint8_t reply[9] = {0xf0, 0x7e, 0x02, 0x42, 0x01, (uint8_t)x, (uint8_t)y, (uint8_t)color, 0xf7};
+
 }
