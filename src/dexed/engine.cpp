@@ -11,6 +11,7 @@
 #include "engine.h"
 #include <new>
 #include "dexed/dexeditor.h"
+#include "processing/source.h"
 
 EngineMkI Dexed::engineMkI;
 FmCore Dexed::engineModern;
@@ -62,14 +63,27 @@ int standardNoteToFreq(int note) {
 
 void Dexed::writeDxPatch(Dx7Patch *patch) {
 	storageManager.writeAttributeHexBytes("dx7patch", patch->currentPatch, 155);
+	// TODO: according to dx7 manual, this is just parameter number 155 ??????
+	storageManager.writeAttribute("dx7opswitch", patch->opSwitch);
+	// real extension:
+	if (patch->random_detune != 0) {
+		storageManager.writeAttribute("dx7randomdetune", patch->random_detune);
+	}
+}
+
+Dx7Patch *Dexed::newPatch(void) {
+	void* memory = generalMemoryAllocator.alloc(sizeof(Dx7Patch), NULL, false, true);
+	return new(memory) Dx7Patch;
+}
+
+Dx7Patch *Dexed::ensurePatch(Source *s) {
+  if (s->dx7Patch == NULL) {
+	  s->dx7Patch = newPatch();
+  }
+  return s->dx7Patch;
 }
 
 void Dexed::readDxPatch(Dx7Patch **patch) {
-  if (*patch == NULL) {
-	void* memory = generalMemoryAllocator.alloc(sizeof(Dx7Patch), NULL, false, true);
-	*patch = new(memory) Dx7Patch;
-  }
 
 	storageManager.readTagOrAttributeValueHexBytes((*patch)->currentPatch, 155);
 }
-

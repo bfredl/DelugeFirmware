@@ -312,7 +312,7 @@ void Sound::setupDefaultExpressionPatching(ParamManager* paramManager) {
 	}
 }
 
-void Sound::setupAsBlankSynth(ParamManager* paramManager) {
+void Sound::setupAsBlankSynth(ParamManager* paramManager, bool is_fm) {
 
 	PatchedParamSet* patchedParams = paramManager->getPatchedParamSet();
 	patchedParams->params[PARAM_LOCAL_OSC_B_VOLUME].setCurrentValueBasicForSetup(-2147483648);
@@ -322,11 +322,20 @@ void Sound::setupAsBlankSynth(ParamManager* paramManager) {
 	patchedParams->params[PARAM_LOCAL_ENV_0_DECAY].setCurrentValueBasicForSetup(
 	    getParamFromUserValue(PARAM_LOCAL_ENV_0_DECAY, 20));
 	patchedParams->params[PARAM_LOCAL_ENV_0_SUSTAIN].setCurrentValueBasicForSetup(2147483647);
-	patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
+	if (is_fm) {
+		sources[0].oscType = OSC_TYPE_DEXED;
+		// adjust back up for real quiet patches..
+		patchedParams->params[PARAM_LOCAL_OSC_A_VOLUME].setCurrentValueBasicForSetup(1288490188); // 40 ish
+		paramManager->getPatchCableSet()->numPatchCables = 0;  // velocity is forwarded to dx7 engine, don't do master volume
+		// TODO: this could be set to "infinity" if we use the DX7 envs to figure out when a voice is gone silent
+		patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(429496729); // 30 ish
+	} else {
+		patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
 
-	paramManager->getPatchCableSet()->numPatchCables = 1;
-	paramManager->getPatchCableSet()->patchCables[0].setup(PATCH_SOURCE_VELOCITY, PARAM_LOCAL_VOLUME,
-	                                                       getParamFromUserValue(PARAM_STATIC_PATCH_CABLE, 50));
+		paramManager->getPatchCableSet()->numPatchCables = 1;
+		paramManager->getPatchCableSet()->patchCables[0].setup(PATCH_SOURCE_VELOCITY, PARAM_LOCAL_VOLUME,
+															   getParamFromUserValue(PARAM_STATIC_PATCH_CABLE, 50));
+	}
 
 	setupDefaultExpressionPatching(paramManager);
 
@@ -2998,8 +3007,20 @@ int Sound::readSourceFromFile(int s, ParamManagerForTimeline* paramManager, int3
 			storageManager.exitTag("reversed");
 		}
 		else if (!strcmp(tagName, "dx7patch")) {
-			Dexed::readDxPatch(&source->dx7Patch);
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			storageManager.readTagOrAttributeValueHexBytes(patch->currentPatch, 155);
 			storageManager.exitTag("dx7patch");
+		}
+		else if (!strcmp(tagName, "dx7opswitch")) {
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			const char *str = storageManager.readTagOrAttributeValue();
+			strncpy(patch->opSwitch, str, 7);
+			storageManager.exitTag("dx7opswitch");
+		}
+		else if (!strcmp(tagName, "dx7randomdetune")) {
+			Dx7Patch *patch = Dexed::ensurePatch(source);
+			patch->random_detune = storageManager.readTagOrAttributeValueInt();
+			storageManager.exitTag("dx7randomdetune");
 		}
 		/*
 		else if (!strcmp(tagName, "sampleSync")) {
