@@ -28,6 +28,7 @@
 #include "sin.h"
 #include "util/functions.h"
 
+int dx_random_detune = 0;  //  TODO: not saved
 
 const int FEEDBACK_BITDEPTH = 8;
 
@@ -108,8 +109,8 @@ int32_t Dx7Note::osc_freq(int logFreq_for_detune, int mode, int coarse, int fine
         // could use more precision, closer enough for now. those numbers comes from my DX7
 		// // TODO: in our flow detune should not happen here at all, but figuring it out is going to require doing  MAFF
         double detuneRatio = 0.0209 * exp(-0.396 * (((float)logFreq_for_detune)/(1<<24))) / 7;
-		// int random_scaled =  (random_detune*random_detune_scale) >> (15+3);
-        logfreq += detuneRatio * logFreq_for_detune * (detune - 7);
+		int random_scaled =  (random_detune*random_detune_scale) >> (15+3);
+        logfreq += detuneRatio * logFreq_for_detune * (detune - 7 + random_scaled);
         
         logfreq += coarsemul[coarse & 31];
         if (fine) {
@@ -201,7 +202,7 @@ Dx7Note::Dx7Note() {
 // TODO: recalculate Scale() using logfreq
 void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
     patch = newp.currentPatch;
-	random_detune_scale = newp.random_detune;
+	random_detune_scale = dx_random_detune; //newp.random_detune;
     
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
@@ -222,7 +223,7 @@ void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
         int fine = patch[off + 19];
         int detune = patch[off + 20];
 
-		// detune_per_voice[op] = getNoise() >> 16;
+		detune_per_voice[op] = getNoise() >> 16;
 
         int32_t freq = osc_freq(logfreq, mode, coarse, fine, detune, detune_per_voice[op]);
         basepitch_[op] = freq;
@@ -236,6 +237,8 @@ void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
 
 	if (patch[136]) {
 		oscSync();
+	} else {
+		oscUnSync();
 	}
 
     int a = 99 - patch[138];  // LFO delay
@@ -366,7 +369,7 @@ void Dx7Note::updateBasePitches(int logFreq_for_detune)
 // TODO: can share yet more codes with ::init()
 void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
     patch = newp.currentPatch;
-	random_detune_scale = newp.random_detune;
+	random_detune_scale = dx_random_detune; // newp.random_detune;
 
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
