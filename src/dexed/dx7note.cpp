@@ -52,6 +52,8 @@ static const uint8_t pitchmodsenstab[] = {
 Dx7Patch::Dx7Patch() {
 	memcpy(currentPatch, init_voice, sizeof currentPatch);
 	strcpy(opSwitch, "111111");
+	// amp_mod = 0;
+	// pitch_mod = 0;
 	eg_mod = 127;
 	random_detune = 0;
 
@@ -107,7 +109,7 @@ int32_t Dx7Note::osc_freq(int logFreq_for_detune, int mode, int coarse, int fine
         // could use more precision, closer enough for now. those numbers comes from my DX7
 		// // TODO: in our flow detune should not happen here at all, but figuring it out is going to require doing  MAFF
         double detuneRatio = 0.0209 * exp(-0.396 * (((float)logFreq_for_detune)/(1<<24))) / 7;
-		int random_scaled =  (random_detune*random_detune_scale) >> (16); // the magic is just this seems a reasonable range
+		int random_scaled =  (random_detune*random_detune_scale) >> (17); // the magic is just this seems a reasonable range
         logfreq += detuneRatio * logFreq_for_detune * (detune - 7 + random_scaled);
         
         logfreq += coarsemul[coarse & 31];

@@ -601,6 +601,7 @@ void Dx7UI::renderTuning(uint8_t image[][OLED_MAIN_WIDTH_PIXELS], int op, int pa
 
   for (int i = 0; i < 3; i++) {
     int val = patch->currentPatch[op*21+i+18];
+	if (i+18 == 20) val -= 7;
     show(val, 0, 7+i*3, (i+18 == param));
   }
 

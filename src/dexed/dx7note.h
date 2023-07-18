@@ -55,8 +55,6 @@ class Dx7Patch {
 	uint32_t lfo_delta;
 	uint32_t lfo_value;
 
-	int pading[16];
-
 	// only needs to be called when rate (param 137) changes
 	void updateLfo();
 	void computeLfo(int n);
