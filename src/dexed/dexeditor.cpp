@@ -263,7 +263,7 @@ void Dx7UI::selectEncoderAction(int8_t offset) {
 	if (param >= 0) {
 		current_val = patch->currentPatch[param];
 	} else if (paramExtra >= 0) {
-		current_val = dx_random_detune; // patch->random_detune;
+		current_val = patch->random_detune;
 	}
 
 	bool scaleable = (param != 134 && param != 135);
@@ -283,7 +283,7 @@ void Dx7UI::selectEncoderAction(int8_t offset) {
 	if (param >= 0) {
 		patch->currentPatch[param] = newval;
 	} else if (paramExtra >= 0) {
-		dx_random_detune = newval;	// patch->random_detune = newval;
+		patch->random_detune = newval;
 	}
     renderUI();
     uiNeedsRendering(this, 0xFFFFFFFF, 0xFFFFFFFF);
@@ -520,7 +520,7 @@ void Dx7UI::renderOLED(uint8_t image[][OLED_MAIN_WIDTH_PIXELS]) {
 	} else if (patch && state == kStateEditing && paramExtra >= 0) {
 		OLED::drawString("--- random detune", 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 		int ybel = 5+TEXT_SIZE_Y_UPDATED+2;
-		intToString(dx_random_detune, buffer, 3);
+		intToString(patch->random_detune, buffer, 3);
 		OLED::drawString(buffer, 0, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 
 	} else if (state == kStateLoading) {

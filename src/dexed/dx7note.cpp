@@ -28,7 +28,6 @@
 #include "sin.h"
 #include "util/functions.h"
 
-int dx_random_detune = 0;  //  TODO: not saved
 
 const int FEEDBACK_BITDEPTH = 8;
 
@@ -53,7 +52,7 @@ static const uint8_t pitchmodsenstab[] = {
 Dx7Patch::Dx7Patch() {
 	memcpy(currentPatch, init_voice, sizeof currentPatch);
 	strcpy(opSwitch, "111111");
-	amp_mod = 0;
+	// amp_mod = 0;
 	pitch_mod = 0;
 	eg_mod = 127;
 
@@ -202,7 +201,7 @@ Dx7Note::Dx7Note() {
 // TODO: recalculate Scale() using logfreq
 void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
     patch = newp.currentPatch;
-	random_detune_scale = dx_random_detune; //newp.random_detune;
+	random_detune_scale = newp.random_detune;
     
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
@@ -297,7 +296,8 @@ void Dx7Note::compute(int32_t *buf, int n, int base_pitch, const Dx7Patch *ctrls
 	int ampmoddepth = (patch[140] * 165) >> 6;
     uint32_t amod_1 = (uint32_t)(((int64_t) ampmoddepth * (int64_t) lfo_delay) >> 8); // Q24 :D
     amod_1 = (uint32_t)(((int64_t) amod_1 * (int64_t) lfo_val) >> 24);
-    uint32_t amod_2 = (uint32_t)(((int64_t) ctrls->amp_mod * (int64_t) lfo_val) >> 7); // Q?? :|
+	int amp_mod_source = 0; // patch cable in here plz
+    uint32_t amod_2 = (uint32_t)(((int64_t) amp_mod_source * (int64_t) lfo_val) >> 7); // Q?? :|
     uint32_t amd_mod = max(amod_1, amod_2);
     
     // ==== EG AMP MOD ====
@@ -369,7 +369,7 @@ void Dx7Note::updateBasePitches(int logFreq_for_detune)
 // TODO: can share yet more codes with ::init()
 void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
     patch = newp.currentPatch;
-	random_detune_scale = dx_random_detune; // newp.random_detune;
+	random_detune_scale = newp.random_detune;
 
     for (int op = 0; op < 6; op++) {
         int off = op * 21;

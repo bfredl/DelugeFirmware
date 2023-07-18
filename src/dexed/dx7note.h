@@ -35,7 +35,6 @@ struct VoiceStatus {
     char pitchStep;
 };
 
-extern int dx_random_detune;  //  TODO: not saved
 class Dx7Patch {
   public:
 	Dx7Patch();
@@ -45,10 +44,10 @@ class Dx7Patch {
     char opSwitch[7];
 
 	// extra parameters
-	// int random_detune = 0;  //  TODO: not saved
+	int random_detune = 0;  //  TODO: not saved
 
 	// TODO: these should be per voice with MPE
-    int amp_mod;
+    // int amp_mod;
     int pitch_mod;
     int eg_mod;
 
