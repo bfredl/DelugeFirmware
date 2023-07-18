@@ -44,11 +44,11 @@ class Dx7Patch {
     char opSwitch[7];
 
 	// extra parameters
-	int random_detune = 0;  //  TODO: not saved
+	int64_t random_detune;  //  TODO: not saved
 
 	// TODO: these should be per voice with MPE
-    // int amp_mod;
-    int pitch_mod;
+    //int amp_mod;
+    // int pitch_mod;
     int eg_mod;
 
 	uint32_t lfo_phase;  // Q32

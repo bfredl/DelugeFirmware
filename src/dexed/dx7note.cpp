@@ -53,8 +53,9 @@ Dx7Patch::Dx7Patch() {
 	memcpy(currentPatch, init_voice, sizeof currentPatch);
 	strcpy(opSwitch, "111111");
 	// amp_mod = 0;
-	pitch_mod = 0;
+	// pitch_mod = 0;
 	eg_mod = 127;
+	random_detune = 0;
 
 	core = (FmCore *)&Dexed::engineModern;
 	// TODO: this should be the only option for modern in release :P
@@ -283,8 +284,9 @@ void Dx7Note::compute(int32_t *buf, int n, int base_pitch, const Dx7Patch *ctrls
     int32_t senslfo = pitchmodsens * (lfo_val - (1 << 23));
     int32_t pmod_1 = (((int64_t) pmd) * (int64_t) senslfo) >> 39;
     pmod_1 = abs(pmod_1);
-    int32_t pmod_2 = (int32_t)(((int64_t)ctrls->pitch_mod * (int64_t)senslfo) >> 14);
-    pmod_2 = abs(pmod_2);
+    // int32_t pmod_2 = (int32_t)(((int64_t)ctrls->pitch_mod * (int64_t)senslfo) >> 14);
+    // pmod_2 = abs(pmod_2);
+	int32_t pmod_2 = 0;
     int32_t pitch_mod = max(pmod_1, pmod_2);
     pitch_mod = pitchenv_.getsample(pitchenv_p(), n) + (pitch_mod * (senslfo < 0 ? -1 : 1));
     
