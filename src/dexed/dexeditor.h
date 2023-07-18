@@ -50,6 +50,7 @@ public:
   };
   State state = kStateNone;
   int param = 0;
+  int paramExtra = -1;
   Dx7Patch *patch;
   bool isScale;
 

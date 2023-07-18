@@ -12,6 +12,10 @@ constexpr uint8_t fromXY(int x, int y) {
 
 typedef uint8_t Button;
 
+// TODO: these are duplicate
+static constexpr uint8_t ZmodButtonX[8] = {1, 1, 1, 1, 2, 2, 2, 2};
+static constexpr uint8_t ZmodButtonY[8] = {0, 1, 2, 3, 0, 1, 2, 3};
+
 // clang-format off
 enum KnownButtons : Button {
 	AFFECT_ENTIRE     = fromXY(affectEntireButtonX, affectEntireButtonY),
@@ -34,6 +38,8 @@ enum KnownButtons : Button {
 	PLAY              = fromXY(playButtonX, playButtonY),
 	RECORD            = fromXY(recordButtonX, recordButtonY),
 	SHIFT             = fromXY(shiftButtonX, shiftButtonY),
+
+	MOD2              = fromXY(ZmodButtonX[1], ZmodButtonY[1]),
 
 	X_ENC             = fromXY(xEncButtonX, xEncButtonY),
 	Y_ENC             = fromXY(yEncButtonX, yEncButtonY),

@@ -158,6 +158,7 @@ int Dx7UI::potentialShortcutPadAction(int x, int y, int on) {
 
   state = kStateNone;
   param = -1;
+  paramExtra = -1;
 
   uplim = 127;
 
@@ -186,17 +187,21 @@ int Dx7UI::potentialShortcutPadAction(int x, int y, int on) {
     } else if (ip == 20) {
       uplim = 14;
     }
-  } else  if (y==0 && x < 11) {
-    param = 6*21+x;
-    if (x < 8) {
-      uplim = 99;
-    } else if (x == 8) {
-      uplim = 31;
-    } else if (x == 9) {
-      uplim = 7;
-    } else if (x == 10) {
-      uplim = 1;
-    }
+  } else  if (y==0 ) {
+	  if (x < 11) {
+		param = 6*21+x;
+		if (x < 8) {
+		  uplim = 99;
+		} else if (x == 8) {
+		  uplim = 31;
+		} else if (x == 9) {
+		  uplim = 7;
+		} else if (x == 10) {
+		  uplim = 1;
+		}
+	  } else if (x == 11) {
+		  paramExtra = 1;
+	  }
   } else if (y == 1) {
     if (x == 0) {
       isScale = !isScale;
@@ -228,7 +233,7 @@ int Dx7UI::potentialShortcutPadAction(int x, int y, int on) {
     }
   }
 
-  if (param >= 0) {
+  if (param >= 0 or paramExtra >= 0) {
     state = kStateEditing;
     loadPending = false;
     soundEditor.setupShortcutBlink(x, y, 1);
@@ -254,10 +259,17 @@ int Dx7UI::potentialShortcutPadAction(int x, int y, int on) {
 void Dx7UI::selectEncoderAction(int8_t offset) {
   if (patch && state == kStateEditing) {
 
+	int current_val;
+	if (param >= 0) {
+		current_val = patch->currentPatch[param];
+	} else if (paramExtra >= 0) {
+		current_val = patch->random_detune;
+	}
+
 	bool scaleable = (param != 134 && param != 135);
 	int scale = (scaleable && Buttons::isShiftButtonPressed()) ? 10 : 1;
 
-	if (patch->currentPatch[param] == uplim && Buttons::isShiftButtonPressed()) {
+	if (param >= 0 && current_val == uplim && Buttons::isShiftButtonPressed()) {
 		if (param == 135) {
 			uplim = 9;  // why not a bit more feedback..
 		} else if (param == 134) {
@@ -265,10 +277,14 @@ void Dx7UI::selectEncoderAction(int8_t offset) {
 		}
 	}
 
-    int newval = patch->currentPatch[param]+offset*scale;
+    int newval = current_val+offset*scale;
     if (newval > uplim) newval = uplim;
     if (newval < 0) newval = 0;
-    patch->currentPatch[param] = newval;
+	if (param >= 0) {
+		patch->currentPatch[param] = newval;
+	} else if (paramExtra >= 0) {
+		patch->random_detune = newval;
+	}
     renderUI();
     uiNeedsRendering(this, 0xFFFFFFFF, 0xFFFFFFFF);
   } else if (state == kStateLoading) {
@@ -368,7 +384,7 @@ bool Dx7UI::renderMainPads(uint32_t whichRows, uint8_t image[][displayWidth + si
 
 
   int editedOp = -1;
-  if (state == kStateEditing && param < 6*21) {
+  if (state == kStateEditing && param >= 0 && param < 6*21) {
     editedOp = param/21;
   }
 
@@ -446,69 +462,77 @@ bool Dx7UI::getGreyoutRowsAndCols(uint32_t* cols, uint32_t* rows) {
 #if HAVE_OLED
 
 void Dx7UI::renderOLED(uint8_t image[][OLED_MAIN_WIDTH_PIXELS]) {
-  if (patch && state == kStateEditing) {
-    char buffer[12];
-    intToString(param, buffer, 3);
-    OLED::drawString(buffer, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+	char buffer[12];
+	if (patch && state == kStateEditing && param >= 0) {
+		intToString(param, buffer, 3);
+		OLED::drawString(buffer, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 
-    int op = param/21;
-    int idx = param%21;
-    if (param < 6*21) {
+		int op = param/21;
+		int idx = param%21;
+		if (param < 6*21) {
 
-      buffer[0] = 'o';
-      buffer[1] = 'p';
-      buffer[2] = '1' + op;
-      buffer[3] = ' ';
-      buffer[4] = 0;
+			buffer[0] = 'o';
+			buffer[1] = 'p';
+			buffer[2] = '1' + op;
+			buffer[3] = ' ';
+			buffer[4] = 0;
 
-    OLED::drawString(buffer, 4*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+			OLED::drawString(buffer, 4*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 
-    OLED::drawString(desc_op_long[idx], 8*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
-    } else if (param < 6*21+18) {
-    OLED::drawString(desc_global_long[param-6*21], 4*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
-    }
+			OLED::drawString(desc_op_long[idx], 8*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		} else if (param < 6*21+18) {
+			OLED::drawString(desc_global_long[param-6*21], 4*TEXT_SPACING_X, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		}
 
-    int val = patch->currentPatch[param];
-    if (param == 6*21+8) {
-      val += 1; // algorithms start at one
-    }
-    int ybel = 5+TEXT_SIZE_Y_UPDATED+2;
-    intToString(val, buffer, 3);
-    OLED::drawString(buffer, 0, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		int val = patch->currentPatch[param];
+		if (param == 6*21+8) {
+			val += 1; // algorithms start at one
+		} else if (param < 6*21 && (idx == 20)) {
+			val -= 7; // detuning -7 - 7
+		}
+		int ybel = 5+TEXT_SIZE_Y_UPDATED+2;
+		intToString(val, buffer, 3);
+		OLED::drawString(buffer, 0, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 
-    const char *extra = "";
-    if (param < 6*21 && (idx == 11 || idx == 12)) {
-      int kurva = min(val,4);
-      extra = curves[kurva];
-    } else if (param < 6*21 && (idx == 17)) {;
-      extra = val ? "fixed" : "ratio";
-    }
-    OLED::drawString(extra, 4*TEXT_SPACING_X, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		const char *extra = "";
+		if (param < 6*21 && (idx == 11 || idx == 12)) {
+			int kurva = min(val,4);
+			extra = curves[kurva];
+		} else if (param < 6*21 && (idx == 17)) {;
+			extra = val ? "fixed" : "ratio";
+		}
+		OLED::drawString(extra, 4*TEXT_SPACING_X, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
 
-    if (param < (6*21+8) && idx < 8) {
-      renderEnvelope(image, op, idx); // op== 6 for pitch envelope
-    } else if (param < 6*21 && idx < 13) {
-      renderScaling(image, op, idx);
-    } else if (param < 6*21 && idx < 16) {
-      // :P
-    } else if (param < 6*21 && idx < 21) {
-      renderTuning(image, op, idx);
-    } else if (param == 134) {
-      renderAlgorithm(image);
-    } else if (param >= 137 && param < 144) {
-      renderLFO(image, param);
-    }
+		if (param < (6*21+8) && idx < 8) {
+			renderEnvelope(image, op, idx); // op== 6 for pitch envelope
+		} else if (param < 6*21 && idx < 13) {
+			renderScaling(image, op, idx);
+		} else if (param < 6*21 && idx < 16) {
+			// :P
+		} else if (param < 6*21 && idx < 21) {
+			renderTuning(image, op, idx);
+		} else if (param == 134) {
+			renderAlgorithm(image);
+		} else if (param >= 137 && param < 144) {
+			renderLFO(image, param);
+		}
 
-  } else if (state == kStateLoading) {
-    char buffer[12];
-    intToString(cartPos+1, buffer, 3);
-    OLED::drawString(buffer, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
-    progName[10] = 0; // just checking
-    OLED::drawString(progName, 0, 5+TEXT_SIZE_Y_UPDATED+2, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
-  } else {
-    const char *text = "DX EDITOR";
-    OLED::drawString(text, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
-  }
+	} else if (patch && state == kStateEditing && paramExtra >= 0) {
+		OLED::drawString("--- random detune", 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		int ybel = 5+TEXT_SIZE_Y_UPDATED+2;
+		intToString(patch->random_detune, buffer, 3);
+		OLED::drawString(buffer, 0, ybel, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+
+	} else if (state == kStateLoading) {
+		char buffer[12];
+		intToString(cartPos+1, buffer, 3);
+		OLED::drawString(buffer, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+		progName[10] = 0; // just checking
+		OLED::drawString(progName, 0, 5+TEXT_SIZE_Y_UPDATED+2, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+	} else {
+		const char *text = "DX EDITOR";
+		OLED::drawString(text, 0, 5, OLED::oledMainImage[0], OLED_MAIN_WIDTH_PIXELS, TEXT_SPACING_X, TEXT_SIZE_Y_UPDATED);
+	}
 }
 
 void show(const char *text, int r, int c, bool inv = false) {
@@ -652,6 +676,8 @@ void Dx7UI::show7Seg() {
 		int val = patch->currentPatch[param];
 		if (param == 6*21+8) {
 			val += 1; // algorithms start at one
+		} else if (param < 6*21 && (idx == 20)) {
+		  val -= 7; // detuning -7 - 7
 		} else if (param < 6*21 && (idx == 17)) {
 		  text = val ? "fixd" : "rati";
 		} else if (param < 6*21 && (idx == 11 || idx == 12)) {

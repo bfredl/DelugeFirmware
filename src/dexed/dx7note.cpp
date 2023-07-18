@@ -26,6 +26,7 @@
 #include <cmath>
 #include "engine.h"
 #include "sin.h"
+#include "util/functions.h"
 
 
 const int FEEDBACK_BITDEPTH = 8;
@@ -98,9 +99,8 @@ void Dx7Patch::computeLfo(int n) {
 	lfo_value = lfoPhaseToValue(lfo_phase, waveform_);
 }
 
-int32_t Dx7Note::osc_freq(int logFreq_for_detune, int mode, int coarse, int fine, int detune) {
+int32_t Dx7Note::osc_freq(int logFreq_for_detune, int mode, int coarse, int fine, int detune, int random_detune) {
 
-    // TODO: pitch randomization
     int32_t logfreq;
     if (mode == 0) {
         logfreq = 0;
@@ -108,6 +108,7 @@ int32_t Dx7Note::osc_freq(int logFreq_for_detune, int mode, int coarse, int fine
         // could use more precision, closer enough for now. those numbers comes from my DX7
 		// // TODO: in our flow detune should not happen here at all, but figuring it out is going to require doing  MAFF
         double detuneRatio = 0.0209 * exp(-0.396 * (((float)logFreq_for_detune)/(1<<24))) / 7;
+		// int random_scaled =  (random_detune*random_detune_scale) >> (15+3);
         logfreq += detuneRatio * logFreq_for_detune * (detune - 7);
         
         logfreq += coarsemul[coarse & 31];
@@ -200,6 +201,7 @@ Dx7Note::Dx7Note() {
 // TODO: recalculate Scale() using logfreq
 void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
     patch = newp.currentPatch;
+	random_detune_scale = newp.random_detune;
     
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
@@ -219,7 +221,10 @@ void Dx7Note::init(Dx7Patch &newp, int midinote, int logfreq, int velocity) {
         int coarse = patch[off + 18];
         int fine = patch[off + 19];
         int detune = patch[off + 20];
-        int32_t freq = osc_freq(logfreq, mode, coarse, fine, detune);
+
+		// detune_per_voice[op] = getNoise() >> 16;
+
+        int32_t freq = osc_freq(logfreq, mode, coarse, fine, detune, detune_per_voice[op]);
         basepitch_[op] = freq;
     }
     pitchenv_.set(pitchenv_p());
@@ -354,13 +359,14 @@ void Dx7Note::updateBasePitches(int logFreq_for_detune)
         int coarse = patch[off + 18];
         int fine = patch[off + 19];
         int detune = patch[off + 20];
-        basepitch_[op] = osc_freq(logFreq_for_detune, mode, coarse, fine, detune);
+        basepitch_[op] = osc_freq(logFreq_for_detune, mode, coarse, fine, detune, detune_per_voice[op]);
     }
 }
 
 // TODO: can share yet more codes with ::init()
 void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
     patch = newp.currentPatch;
+	random_detune_scale = newp.random_detune;
 
     for (int op = 0; op < 6; op++) {
         int off = op * 21;
@@ -368,7 +374,7 @@ void Dx7Note::update(Dx7Patch &newp, int midinote, int logFreq, int velocity) {
         int coarse = patch[off + 18];
         int fine = patch[off + 19];
         int detune = patch[off + 20];
-        basepitch_[op] = osc_freq(logFreq, mode, coarse, fine, detune);
+        basepitch_[op] = osc_freq(logFreq, mode, coarse, fine, detune, detune_per_voice[op]);
         
         int outlevel = patch[off + 16];
         outlevel = Env::scaleoutlevel(outlevel);
@@ -408,5 +414,12 @@ void Dx7Note::oscSync() {
     for (int i=0;i<6;i++) {
         gain_out[i] = 0;
         phase[i] = 0;
+    }
+}
+
+void Dx7Note::oscUnSync() {
+    for (int i=0;i<6;i++) {
+        gain_out[i] = 0;
+        phase[i] = getNoise();
     }
 }

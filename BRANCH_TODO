@@ -3,13 +3,13 @@
 
 - tune overall gain to give optimize headroom
 
-- respect pitch from transpose/global-transpose/modmatrix/microtuning
 -  mpe (take hints from Dexed MPE handling)
 - caltulate virtual midinote back from actual pitch, or rework keyboard scaling entirely
 - add some modmatrix inputs (at least for per-op ampmod and pitchmod)
 
-- save/load patch as part of SYNTH.xml
-
-- load patches from .syx
-  - partially: supports exactly one "dx7.syx" file at sdcard root folder
-  - how handle LFO? either implement dx7 LFO, or copy data into the deluge LFO
+Stealable inputs:
+Osc1 shape
+osc1 feedback
+mod1 level
+mod1 feedback
+mod1 pitch

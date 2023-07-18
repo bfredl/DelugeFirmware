@@ -43,6 +43,9 @@ class Dx7Patch {
     FmCore *core;
     char opSwitch[7];
 
+	// extra parameters
+	int random_detune = 0;  //  TODO: not saved
+
 	// TODO: these should be per voice with MPE
     int amp_mod;
     int pitch_mod;
@@ -79,8 +82,9 @@ public:
     void transferState(Dx7Note& src);
     void transferSignal(Dx7Note &src);
     void oscSync();
+    void oscUnSync();
 
-    int32_t osc_freq(int log_freq, int mode, int coarse, int fine, int detune);
+    int32_t osc_freq(int log_freq, int mode, int coarse, int fine, int detune, int random_detune);
 
 private:
     Env env_[6];
@@ -95,7 +99,10 @@ private:
 	uint32_t delayinc_;
 	uint32_t delayinc2_;
 
+	int16_t detune_per_voice[6];
+
     uint8_t *patch; // raw patch, same as p->currentPatch
+	int random_detune_scale;
 
 	EnvParams & env_p(int op) {
 		return *(EnvParams *)&patch[op*21];

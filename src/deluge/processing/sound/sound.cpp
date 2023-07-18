@@ -312,7 +312,7 @@ void Sound::setupDefaultExpressionPatching(ParamManager* paramManager) {
 	}
 }
 
-void Sound::setupAsBlankSynth(ParamManager* paramManager) {
+void Sound::setupAsBlankSynth(ParamManager* paramManager, bool is_fm) {
 
 	PatchedParamSet* patchedParams = paramManager->getPatchedParamSet();
 	patchedParams->params[PARAM_LOCAL_OSC_B_VOLUME].setCurrentValueBasicForSetup(-2147483648);
@@ -322,11 +322,18 @@ void Sound::setupAsBlankSynth(ParamManager* paramManager) {
 	patchedParams->params[PARAM_LOCAL_ENV_0_DECAY].setCurrentValueBasicForSetup(
 	    getParamFromUserValue(PARAM_LOCAL_ENV_0_DECAY, 20));
 	patchedParams->params[PARAM_LOCAL_ENV_0_SUSTAIN].setCurrentValueBasicForSetup(2147483647);
-	patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
+	if (is_fm) {
+		sources[1].oscType = OSC_TYPE_DEXED;
+		paramManager->getPatchCableSet()->numPatchCables = 0;  // velocity is forwarded to dx7 engine
+		// TODO: this could be set to "infinity" if we use the DX7 envs to figure out when a voice is gone silent
+		patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(0);
+	} else {
+		patchedParams->params[PARAM_LOCAL_ENV_0_RELEASE].setCurrentValueBasicForSetup(-2147483648);
 
-	paramManager->getPatchCableSet()->numPatchCables = 1;
-	paramManager->getPatchCableSet()->patchCables[0].setup(PATCH_SOURCE_VELOCITY, PARAM_LOCAL_VOLUME,
-	                                                       getParamFromUserValue(PARAM_STATIC_PATCH_CABLE, 50));
+		paramManager->getPatchCableSet()->numPatchCables = 1;
+		paramManager->getPatchCableSet()->patchCables[0].setup(PATCH_SOURCE_VELOCITY, PARAM_LOCAL_VOLUME,
+															   getParamFromUserValue(PARAM_STATIC_PATCH_CABLE, 50));
+	}
 
 	setupDefaultExpressionPatching(paramManager);
 
