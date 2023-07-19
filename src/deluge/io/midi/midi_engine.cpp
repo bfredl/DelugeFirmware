@@ -28,6 +28,7 @@
 #include "io/midi/midi_device.h"
 #include "io/midi/midi_device_manager.h"
 #include "hid/hid_sysex.h"
+#include "hid/buttons.h"
 
 extern "C" {
 #include "RZA1/uart/sio_char.h"
@@ -746,6 +747,21 @@ void MidiEngine::debugSysexReceived(MIDIDevice* device, uint8_t* data, int len) 
 	}
 }
 
+void MidiEngine::wrenSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
+#if ENABLE_WREN
+extern Wren::VM* wren;
+	if (len < 6) {
+		return;
+	}
+
+	switch (data[3]) {
+	case 0:
+		data[len-1] = 0;
+		Buttons::wren->interpret("main", (const char*)(data+4));
+	}
+#endif
+}
+
 void virtual_uart_print(char* msg, int ln) {
 	if (!msg) {
 		return; // Do not do that
@@ -799,6 +815,10 @@ void MidiEngine::midiSysexReceived(MIDIDevice* device, uint8_t* data, int len) {
 			// debug namespace: for sysex calls useful for debugging purposes
 			// and/or might require a debug build to function.
 			debugSysexReceived(device, data, len);
+			break;
+
+		case 4:
+			wrenSysexReceived(device, data, len);
 			break;
 
 		case 0x7f: // PONG, reserved

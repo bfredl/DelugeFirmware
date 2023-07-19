@@ -28,7 +28,10 @@ public:
 	void setup();
 	void init();
 	void buttonAction(hid::Button b, bool on);
-	inline WrenInterpretResult interpret(const char*, const char*);
+
+	inline WrenInterpretResult interpret(const char* mod, const char* source) {
+		return wrenInterpret(vm, mod, source);
+	}
 
 	static void print(const char* text);
 

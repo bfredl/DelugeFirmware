@@ -81,6 +81,7 @@ private:
 	int getPotentialNumConnectedUSBMIDIDevices(int ip);
 
 	void debugSysexReceived(MIDIDevice* device, uint8_t* data, int len);
+	void wrenSysexReceived(MIDIDevice* device, uint8_t* data, int len);
 };
 
 uint32_t setupUSBMessage(uint8_t statusType, uint8_t channel, uint8_t data1, uint8_t data2);

@@ -191,10 +191,6 @@ VM::~VM() {
 	wren_heap_deinit();
 }
 
-inline WrenInterpretResult VM::interpret(const char* mod, const char* source) {
-	return wrenInterpret(vm, mod, source);
-}
-
 void VM::tick() {
 	if (first_run) {
 		init();
