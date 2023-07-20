@@ -52,6 +52,7 @@
 #include "hid/led/indicator_leds.h"
 #include "storage/flash_storage.h"
 #include "modulation/patch/patch_cable_set.h"
+#include "io/debug/print.h"
 
 extern "C" {
 #include "RZA1/mtu/mtu.h"
@@ -98,6 +99,7 @@ Sound::Sound() : patcher(&patchableInfoForSound) {
 
 	numUnison = 1;
 	unisonDetune = 8;
+	unisonStereoSpread = 0;
 
 	synthMode = SYNTH_MODE_SUBTRACTIVE;
 	modulator1ToModulator0 = false;
@@ -2624,6 +2626,7 @@ void Sound::doneReadingFromFile() {
 	}
 
 	setupUnisonDetuners(NULL);
+	setupUnisonStereoSpread();
 
 	for (int m = 0; m < numModulators; m++) {
 		recalculateModulatorTransposer(m, NULL);
@@ -2660,6 +2663,25 @@ void Sound::setupUnisonDetuners(ModelStackWithSoundFlags* modelStack) {
 		}
 	}
 	recalculateAllVoicePhaseIncrements(modelStack); // Can handle NULL
+}
+
+void Sound::setupUnisonStereoSpread() {
+	if (numUnison != 1) {
+		// TODO: ideally max linear spread will be reached with half the value (25)
+		// and then the two L R groups start moving until max value: half hard left, half hard right
+		int32_t spreadScaled = (int32_t)unisonStereoSpread * 42949672;
+		int32_t lowestVoice = -(spreadScaled >> 1);
+		int32_t voiceSpacing = spreadScaled / (numUnison - 1);
+
+		for (int u = 0; u < numUnison; u++) {
+			// alternate the voices like -2 +1 0 -1 +2 for more balanced
+			// interaction with detune
+			bool isOdd = getMin(u, numUnison - 1 - u) & 1;
+			int32_t sign = isOdd ? -1 : 1;
+
+			unisonPan[u] = sign * (lowestVoice + voiceSpacing * u);
+		}
+	}
 }
 
 void Sound::calculateEffectiveVolume() {
@@ -2814,6 +2836,11 @@ void Sound::setNumUnison(int newNum, ModelStackWithSoundFlags* modelStack) {
 void Sound::setUnisonDetune(int newAmount, ModelStackWithSoundFlags* modelStack) {
 	unisonDetune = newAmount;
 	setupUnisonDetuners(modelStack); // Can handle NULL
+}
+
+void Sound::setUnisonStereoSpread(int newAmount) {
+	unisonStereoSpread = newAmount;
+	setupUnisonStereoSpread();
 }
 
 bool Sound::anyNoteIsOn() {
@@ -4050,6 +4077,10 @@ bool Sound::renderingVoicesInStereo(ModelStackWithSoundFlags* modelStack) {
 	}
 
 	if (modelStack->paramManager->getPatchCableSet()->doesParamHaveSomethingPatchedToIt(PARAM_LOCAL_PAN)) {
+		return true;
+	}
+
+	if (unisonStereoSpread && numUnison > 1) {
 		return true;
 	}
 

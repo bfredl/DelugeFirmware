@@ -688,6 +688,7 @@ typedef enum SyncLevel_ {
 #define CACHE_BYTE_DEPTH_MAGNITUDE 2 // Invalid / unused for odd numbers of bytes like 3
 
 #define MAX_UNISON_DETUNE 50
+#define MAX_UNISON_STEREOSPREAD 50
 
 #define PARAM_STATIC_COMPRESSOR_ATTACK 162
 #define PARAM_STATIC_COMPRESSOR_RELEASE 163

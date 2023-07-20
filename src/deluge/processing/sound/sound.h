@@ -96,12 +96,16 @@ public:
 
 	int8_t unisonDetune;
 
+	uint8_t unisonStereoSpread;
+
 	int16_t modulatorTranspose[numModulators];
 	int8_t modulatorCents[numModulators];
 
 	PhaseIncrementFineTuner modulatorTransposers[numModulators];
 
 	PhaseIncrementFineTuner unisonDetuners[maxNumUnison];
+
+	int32_t unisonPan[maxNumUnison];
 
 	uint8_t synthMode;
 	bool modulator1ToModulator0;
@@ -170,6 +174,7 @@ public:
 	void sampleZoneChanged(int markerType, int s, ModelStackWithSoundFlags* modelStack);
 	void setNumUnison(int newNum, ModelStackWithSoundFlags* modelStack);
 	void setUnisonDetune(int newAmount, ModelStackWithSoundFlags* modelStack);
+	void setUnisonStereoSpread(int newAmount);
 	void setModulatorTranspose(int m, int value, ModelStackWithSoundFlags* modelStack);
 	void setModulatorCents(int m, int value, ModelStackWithSoundFlags* modelStack);
 	int readFromFile(ModelStackWithModControllable* modelStack, int32_t readAutomationUpToPos,
@@ -273,6 +278,7 @@ private:
 	uint32_t getGlobalLFOPhaseIncrement();
 	void recalculateModulatorTransposer(uint8_t m, ModelStackWithSoundFlags* modelStack);
 	void setupUnisonDetuners(ModelStackWithSoundFlags* modelStack);
+	void setupUnisonStereoSpread();
 	void calculateEffectiveVolume();
 	void ensureKnobReferencesCorrectVolume(Knob* knob);
 	int readTagFromFile(char const* tagName, ParamManagerForTimeline* paramManager, int32_t readAutomationUpToPos,

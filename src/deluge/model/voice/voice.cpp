@@ -1049,6 +1049,7 @@ skipAutoRelease : {}
 	// Otherwise, we need to think about whether we're rendering the same number of channels as the Sound
 	else {
 
+		bool stereoUnison = sound->unisonStereoSpread && sound->numUnison > 1 && AudioEngine::renderInStereo;
 		if (synthMode == SYNTH_MODE_SUBTRACTIVE) {
 
 			for (int s = 0; s < NUM_SOURCES; s++) {
@@ -1057,7 +1058,7 @@ skipAutoRelease : {}
 				}
 
 				bool renderingSourceInStereo =
-				    sound->sources[s].renderInStereo((SampleHolder*)guides[s].audioFileHolder);
+				    sound->sources[s].renderInStereo(sound, (SampleHolder*)guides[s].audioFileHolder);
 
 				if (renderingSourceInStereo != soundRenderingInStereo) {
 					renderingDirectlyIntoSoundBuffer = false;
@@ -1070,7 +1071,7 @@ skipAutoRelease : {}
 		}
 		else {
 			// If got here, we're rendering in mono
-			renderingDirectlyIntoSoundBuffer = (soundRenderingInStereo == false);
+			renderingDirectlyIntoSoundBuffer = (soundRenderingInStereo == false) && !stereoUnison;
 		}
 	}
 decidedWhichBufferRenderingInto:
@@ -1152,6 +1153,8 @@ decidedWhichBufferRenderingInto:
 
 	unsigned int sourcesToRenderInStereo = 0;
 
+	bool unisonStereo = false;
+
 	// Normal mode: subtractive / samples. We do each source first, for all unison
 	if (synthMode == SYNTH_MODE_SUBTRACTIVE) {
 
@@ -1184,7 +1187,7 @@ decidedWhichBufferRenderingInto:
 				}
 			}
 
-			if (!sound->sources[s].renderInStereo((SampleHolder*)guides[s].audioFileHolder)) {
+			if (!sound->sources[s].renderInStereo(sound, (SampleHolder*)guides[s].audioFileHolder)) {
 				renderBasicSource(sound, paramManager, s, oscBuffer, numSamples, sourceAmplitudesNow[s],
 				                  &unisonPartBecameInactive, overallPitchAdjust, (s == 1) && doingOscSync, oscSyncPos,
 				                  oscSyncPhaseIncrement, sourceAmplitudeIncrements[s], getPhaseIncrements,
@@ -2317,16 +2320,37 @@ dontUseCache : {}
 				oscSyncPhaseIncrementsThisUnison = oscSyncPhaseIncrements[u];
 			}
 
+			bool stereo = false;
+
+			int32_t monobuffer[SSI_TX_BUFFER_NUM_SAMPLES];
+			int32_t* renderBuffer = oscBuffer;
+
+			if (sound->unisonStereoSpread && sound->numUnison > 1 && AudioEngine::renderInStereo) {
+				stereo = true;
+				memset(monobuffer, 0, sizeof monobuffer);
+				renderBuffer = monobuffer;
+			}
+
 			int32_t* oscBufferEnd =
-			    oscBuffer + numSamples; // TODO: we don't really want to be calculating this so early do we?
+			    renderBuffer + numSamples; // TODO: we don't really want to be calculating this so early do we?
 
 			// Work out pulse width
 			uint32_t pulseWidth = (uint32_t)lshiftAndSaturate<1>(paramFinalValues[PARAM_LOCAL_OSC_A_PHASE_WIDTH + s]);
 
-			renderOsc(s, sound->sources[s].oscType, sourceAmplitude, oscBuffer, oscBufferEnd, numSamples,
+			renderOsc(s, sound->sources[s].oscType, sourceAmplitude, renderBuffer, oscBufferEnd, numSamples,
 			          phaseIncrement, pulseWidth, &unisonParts[u].sources[s].oscPos, true, amplitudeIncrement,
 			          doOscSync, oscSyncPosThisUnison, oscSyncPhaseIncrementsThisUnison, oscRetriggerPhase,
 			          waveIndexIncrement);
+
+			if (stereo) {
+				int32_t amplitudeL, amplitudeR;
+				shouldDoPanning(sound->unisonPan[u], &amplitudeL, &amplitudeR);
+				// TODO: if render buffer was typed we could use addPannedMono()
+				for (int i = 0; i < numSamples; i++) {
+					oscBuffer[(i << 1)] += multiply_32x32_rshift32(renderBuffer[i], amplitudeL) << 2;
+					oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(renderBuffer[i], amplitudeR) << 2;
+				}
+			}
 		}
 	}
 }
