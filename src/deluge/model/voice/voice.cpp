@@ -1348,8 +1348,8 @@ cantBeDoingOscSyncForFirstOsc:
 					int32_t const* const oscBufferEnd = oscBuffer + 2*numSamples;
 					do {
 						int32_t out = multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
-						*output++ = multiply_32x32_rshift32(out, unisonAmplitudeL) << 2;
-						*output++ = multiply_32x32_rshift32(out, unisonAmplitudeR) << 2;
+						*output++ += multiply_32x32_rshift32(out, unisonAmplitudeL) << 2;
+						*output++ += multiply_32x32_rshift32(out, unisonAmplitudeR) << 2;
 						input0++;
 						input1++;
 					} while (output != oscBufferEnd);
@@ -2230,7 +2230,7 @@ dontUseCache : {}
 			                        sound->sources[s].sampleControls.interpolationMode, getPriorityRating());
 
 			if (stereoUnison) {
-				if (numSamples == 2) {
+				if (numChannels == 2) {
 					// TODO: society if renderBasicSource() took a StereoSample[] buffer already
 					for (int i = 0; i < numSamples; i++) {
 						oscBuffer[(i << 1)] += multiply_32x32_rshift32(renderBuffer[(i << 1)], amplitudeL) << 2;
