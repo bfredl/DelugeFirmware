@@ -1484,7 +1484,6 @@ carriersDone : {}
 skipUnisonPart : {}
 	}
 
-	// Output mono osc buffer. This is skipped (via goto statement above) if we ended up with a stereo buffer.
 	if (!renderingDirectlyIntoSoundBuffer) {
 		if (didStereoTempBuffer) {
 			int32_t* const oscBufferEnd = oscBuffer + (numSamples << 1);
@@ -1505,8 +1504,10 @@ skipUnisonPart : {}
 					int32_t outputSampleR = *(oscBufferPos++);
 
 					overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-					outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
-					outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
+					if (synthMode != SYNTH_MODE_FM) {
+						outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
+						outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
+					}
 
 					// Write to the output buffer, panning or not
 					if (doPanning) {
@@ -1532,8 +1533,10 @@ skipUnisonPart : {}
 					int32_t outputSampleR = *(oscBufferPos++);
 
 					overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-					outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
-					outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
+					if (synthMode != SYNTH_MODE_FM) {
+						outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
+						outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
+					}
 
 					sound->saturate(&outputSampleL, &lastSaturationTanHWorkingValue[0]);
 					sound->saturate(&outputSampleR, &lastSaturationTanHWorkingValue[1]);
