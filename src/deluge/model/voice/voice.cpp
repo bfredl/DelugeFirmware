@@ -1142,7 +1142,8 @@ decidedWhichBufferRenderingInto:
 
 		// Otherwise, clear the buffer
 		else {
-			memset(oscBuffer, 0, numSamples * sizeof(int32_t));
+			int channels = stereoUnison ? 2 : 1;
+			memset(oscBuffer, 0, channels * numSamples * sizeof(int32_t));
 		}
 
 		// Even if first rendering into a local Voice buffer, we'll very often still just do panning at the Sound level
@@ -1158,7 +1159,6 @@ decidedWhichBufferRenderingInto:
 
 	unsigned int sourcesToRenderInStereo = 0;
 
-	bool unisonStereo = sound->unisonStereoSpread && sound->numUnison > 1 && soundRenderingInStereo;
 
 	// Normal mode: subtractive / samples. We do each source first, for all unison
 	if (synthMode == SYNTH_MODE_SUBTRACTIVE) {
@@ -1261,14 +1261,13 @@ decidedWhichBufferRenderingInto:
 		if (stereoUnison) {
 			// oscBuffer is always a stereo temp buffer
 			didStereoTempBuffer = true;
-			memset(oscBuffer, 0, 2 * numSamples * sizeof(int32_t));
 		}
 
 		// For each unison part
 		for (int u = 0; u < sound->numUnison; u++) {
 
-			int32_t amplitudeL, amplitudeR;
-			shouldDoPanning((unisonStereo ? sound->unisonPan[u] : 0), &amplitudeL, &amplitudeR);
+			int32_t unisonAmplitudeL, unisonAmplitudeR;
+			shouldDoPanning((stereoUnison ? sound->unisonPan[u] : 0), &unisonAmplitudeL, &unisonAmplitudeR);
 
 			// Work out the phase increments of the two sources. If these are too high, sourceAmplitudes[s] is set to 0. Yes this will affect all unison parts, which seems like it's
 			// not what we want, but since we're traversing the unison parts in ascending frequency, it's fine!
@@ -1345,12 +1344,12 @@ cantBeDoingOscSyncForFirstOsc:
 				int32_t* __restrict__ input0 = spareRenderingBuffer[2];
 				int32_t* __restrict__ input1 = spareRenderingBuffer[3];
 
-				if (unisonStereo) {
+				if (stereoUnison) {
 					int32_t const* const oscBufferEnd = oscBuffer + 2*numSamples;
 					do {
 						int32_t out = multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
-						*output++ = multiply_32x32_rshift32(out, amplitudeL) << 2;
-						*output++ = multiply_32x32_rshift32(out, amplitudeR) << 2;
+						*output++ = multiply_32x32_rshift32(out, unisonAmplitudeL) << 2;
+						*output++ = multiply_32x32_rshift32(out, unisonAmplitudeR) << 2;
 						input0++;
 						input1++;
 					} while (output != oscBufferEnd);
@@ -1397,7 +1396,7 @@ cantBeDoingOscSyncForFirstOsc:
 				}
 
 				int32_t* fmOscBuffer = oscBuffer;
-				if (unisonStereo) {
+				if (stereoUnison) {
 					// buffer 0-1: stereo output, 2: modulators, 3: per-unison carriers
 					fmOscBuffer = spareRenderingBuffer[3];
 					memset(fmOscBuffer, 0, numSamples * sizeof(int32_t));
@@ -1472,16 +1471,14 @@ noModulatorsActive:
 				}
 
 carriersDone : {}
-			   if (unisonStereo) {
+			   if (stereoUnison) {
 				   // double up the temp buffer
 					for (int i = 0; i < numSamples; i++) {
-						oscBuffer[(i << 1)] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeL) << 2;
-						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeR) << 2;
+						oscBuffer[(i << 1)] += multiply_32x32_rshift32(fmOscBuffer[i], unisonAmplitudeL) << 2;
+						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(fmOscBuffer[i], unisonAmplitudeR) << 2;
 					}
 			   }
 			}
-
-			// zzz
 		}
 
 skipUnisonPart : {}
@@ -2030,10 +2027,10 @@ pitchTooHigh:
 			}
 		}
 
-		bool unisonStereo = sound->unisonStereoSpread && sound->numUnison > 1 && stereoBuffer;
+		bool stereoUnison = sound->unisonStereoSpread && sound->numUnison > 1 && stereoBuffer;
 		int32_t amplitudeL, amplitudeR;
-		shouldDoPanning((unisonStereo ? sound->unisonPan[u] : 0), &amplitudeL, &amplitudeR);
-		// used if mono source but unisonStereo active
+		shouldDoPanning((stereoUnison ? sound->unisonPan[u] : 0), &amplitudeL, &amplitudeR);
+		// used if mono source but stereoUnison active
 		// TODO: static allocation
 		int32_t extrabuffer[SSI_TX_BUFFER_NUM_SAMPLES*2];
 
@@ -2208,7 +2205,7 @@ dontUseCache : {}
 
 			int32_t* renderBuffer = oscBuffer;
 
-			if (unisonStereo) {
+			if (stereoUnison) {
 				// TODO: I first wanted to integrate this with voiceSample->render()'s own
 				// amplitude control but it is just too complex - multiple copies of
 				// the amp logic depending if caching is used or not, timestretching or not,
@@ -2229,7 +2226,7 @@ dontUseCache : {}
 			                        timeStretchRatio, sourceAmplitude, amplitudeIncrement, interpolationBufferSize,
 			                        sound->sources[s].sampleControls.interpolationMode, getPriorityRating());
 
-			if (unisonStereo) {
+			if (stereoUnison) {
 				if (numSamples == 2) {
 					// TODO: society if renderBasicSource() took a StereoSample[] buffer already
 					for (int i = 0; i < numSamples; i++) {
