@@ -54,7 +54,7 @@ extern "C" {
 #include "RZA1/mtu/mtu.h"
 }
 
-int32_t spareRenderingBuffer[3][SSI_TX_BUFFER_NUM_SAMPLES] __attribute__((aligned(CACHE_LINE_SIZE)));
+int32_t spareRenderingBuffer[4][SSI_TX_BUFFER_NUM_SAMPLES] __attribute__((aligned(CACHE_LINE_SIZE)));
 
 int32_t oscSyncRenderingBuffer[SSI_TX_BUFFER_NUM_SAMPLES + 4]
     __attribute__((aligned(CACHE_LINE_SIZE))); // Hopefully I could make this use the spareRenderingBuffer instead...
@@ -673,6 +673,8 @@ bool Voice::render(ModelStackWithVoice* modelStack, int32_t* soundBuffer, int nu
 	ParamManagerForTimeline* paramManager = (ParamManagerForTimeline*)modelStack->paramManager;
 	Sound* sound = (Sound*)modelStack->modControllable;
 
+	bool didStereoTempBuffer = false;
+
 	// If we've previously ignored a note-off, we need to check that the user hasn't changed the preset so that we're now waiting for a note-off again
 	if (previouslyIgnoredNoteOff && sound->allowNoteTails(modelStack, true)) {
 		noteOff(modelStack);
@@ -1030,6 +1032,9 @@ skipAutoRelease : {}
 		}
 	}
 
+	// whether stereo unison actually is active. if stereo is being vetoed from higher up, don't do it.
+	bool stereoUnison = sound->unisonStereoSpread && sound->numUnison > 1 && soundRenderingInStereo;
+
 	// If various conditions are met, we can cut a corner by rendering directly into the Sound's buffer
 	bool renderingDirectlyIntoSoundBuffer;
 
@@ -1049,7 +1054,6 @@ skipAutoRelease : {}
 	// Otherwise, we need to think about whether we're rendering the same number of channels as the Sound
 	else {
 
-		bool stereoUnison = sound->unisonStereoSpread && sound->numUnison > 1 && AudioEngine::renderInStereo;
 		if (synthMode == SYNTH_MODE_SUBTRACTIVE) {
 
 			for (int s = 0; s < NUM_SOURCES; s++) {
@@ -1071,7 +1075,7 @@ skipAutoRelease : {}
 		}
 		else {
 			// If got here, we're rendering in mono
-			renderingDirectlyIntoSoundBuffer = (soundRenderingInStereo == false) && !stereoUnison;
+			renderingDirectlyIntoSoundBuffer = (soundRenderingInStereo == false);
 		}
 	}
 decidedWhichBufferRenderingInto:
@@ -1108,6 +1112,7 @@ decidedWhichBufferRenderingInto:
 
 	// Or if rendering to local Voice buffer, We need to do some other setting up - like wiping the buffer clean first
 	else {
+		// two first indicies are reserved in case we need stereo for unison spread
 		oscBuffer = spareRenderingBuffer[0];
 
 		int32_t const* const oscBufferEnd = oscBuffer + numSamples;
@@ -1153,7 +1158,7 @@ decidedWhichBufferRenderingInto:
 
 	unsigned int sourcesToRenderInStereo = 0;
 
-	bool unisonStereo = false;
+	bool unisonStereo = sound->unisonStereoSpread && sound->numUnison > 1 && soundRenderingInStereo;
 
 	// Normal mode: subtractive / samples. We do each source first, for all unison
 	if (synthMode == SYNTH_MODE_SUBTRACTIVE) {
@@ -1188,7 +1193,7 @@ decidedWhichBufferRenderingInto:
 			}
 
 			if (!sound->sources[s].renderInStereo(sound, (SampleHolder*)guides[s].audioFileHolder)) {
-				renderBasicSource(sound, paramManager, s, oscBuffer, numSamples, sourceAmplitudesNow[s],
+				renderBasicSource(sound, paramManager, s, oscBuffer, numSamples, false, sourceAmplitudesNow[s],
 				                  &unisonPartBecameInactive, overallPitchAdjust, (s == 1) && doingOscSync, oscSyncPos,
 				                  oscSyncPhaseIncrement, sourceAmplitudeIncrements[s], getPhaseIncrements,
 				                  getOutAfterGettingPhaseIncrements, sourceWaveIndexIncrements[s]);
@@ -1220,7 +1225,7 @@ decidedWhichBufferRenderingInto:
 			// Render each source that's stereo
 			for (int s = 0; s < NUM_SOURCES; s++) {
 				if (sourcesToRenderInStereo & (1 << s)) {
-					renderBasicSource(sound, paramManager, s, oscBuffer, numSamples, sourceAmplitudesNow[s],
+					renderBasicSource(sound, paramManager, s, oscBuffer, numSamples, true, sourceAmplitudesNow[s],
 					                  &unisonPartBecameInactive, overallPitchAdjust, false, 0, 0,
 					                  sourceAmplitudeIncrements[s], NULL, false, sourceWaveIndexIncrements[s]);
 				}
@@ -1229,68 +1234,7 @@ decidedWhichBufferRenderingInto:
 			// Output of stereo oscillator buffer (mono gets done elsewhere, below).
 			// If we're here, we also know that the Sound's buffer is also stereo
 			if (!renderingDirectlyIntoSoundBuffer) {
-				int32_t* const oscBufferEnd = oscBuffer + (numSamples << 1);
-
-				// Filters
-				filterSets[0].renderLong(oscBuffer, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples, 2);
-				filterSets[1].renderLong(oscBuffer + 1, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples, 2);
-
-				// No clipping
-				if (!sound->clippingAmount) {
-
-					int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
-					StereoSample* __restrict__ outputSample = (StereoSample*)soundBuffer;
-					int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
-
-					do {
-						int32_t outputSampleL = *(oscBufferPos++);
-						int32_t outputSampleR = *(oscBufferPos++);
-
-						overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-						outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
-						outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
-
-						// Write to the output buffer, panning or not
-						if (doPanning) {
-							outputSample->addPannedStereo(outputSampleL, outputSampleR, amplitudeL, amplitudeR);
-						}
-						else {
-							outputSample->addStereo(outputSampleL, outputSampleR);
-						}
-
-						outputSample++;
-					} while (oscBufferPos != oscBufferEnd);
-				}
-
-				// Yes clipping
-				else {
-
-					int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
-					StereoSample* __restrict__ outputSample = (StereoSample*)soundBuffer;
-					int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
-
-					do {
-						int32_t outputSampleL = *(oscBufferPos++);
-						int32_t outputSampleR = *(oscBufferPos++);
-
-						overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-						outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
-						outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
-
-						sound->saturate(&outputSampleL, &lastSaturationTanHWorkingValue[0]);
-						sound->saturate(&outputSampleR, &lastSaturationTanHWorkingValue[1]);
-
-						// Write to the output buffer, panning or not
-						if (doPanning) {
-							outputSample->addPannedStereo(outputSampleL, outputSampleR, amplitudeL, amplitudeR);
-						}
-						else {
-							outputSample->addStereo(outputSampleL, outputSampleR);
-						}
-
-						outputSample++;
-					} while (oscBufferPos != oscBufferEnd);
-				}
+				didStereoTempBuffer = true;
 			}
 		}
 
@@ -1321,6 +1265,9 @@ decidedWhichBufferRenderingInto:
 
 		// For each unison part
 		for (int u = 0; u < sound->numUnison; u++) {
+
+			int32_t amplitudeL, amplitudeR;
+			shouldDoPanning((unisonStereo ? sound->unisonPan[u] : 0), &amplitudeL, &amplitudeR);
 
 			// Work out the phase increments of the two sources. If these are too high, sourceAmplitudes[s] is set to 0. Yes this will affect all unison parts, which seems like it's
 			// not what we want, but since we're traversing the unison parts in ascending frequency, it's fine!
@@ -1379,7 +1326,7 @@ cantBeDoingOscSyncForFirstOsc:
 
 					int oscType = sound->sources[s].oscType;
 
-					renderOsc(s, oscType, 0, spareRenderingBuffer[s + 1], spareRenderingBuffer[s + 1] + numSamples,
+					renderOsc(s, oscType, 0, spareRenderingBuffer[s + 2], spareRenderingBuffer[s + 2] + numSamples,
 					          numSamples, phaseIncrements[s], pulseWidth, &unisonParts[u].sources[s].oscPos, false, 0,
 					          doingOscSyncThisOscillator, oscSyncPos[u], phaseIncrements[0],
 					          sound->oscRetriggerPhase[s], sourceWaveIndexIncrements[s]);
@@ -1394,15 +1341,26 @@ cantBeDoingOscSyncForFirstOsc:
 				}
 
 				int32_t* __restrict__ output = oscBuffer;
-				int32_t* __restrict__ input0 = spareRenderingBuffer[1];
-				int32_t* __restrict__ input1 = spareRenderingBuffer[2];
-				int32_t const* const oscBufferEnd = oscBuffer + numSamples;
+				int32_t* __restrict__ input0 = spareRenderingBuffer[2];
+				int32_t* __restrict__ input1 = spareRenderingBuffer[3];
 
+				if (unisonStereo) {
+				int32_t const* const oscBufferEnd = oscBuffer + 2*numSamples;
+					do {
+						int32_t out = multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
+						*output++ = multiply_32x32_rshift32(out, amplitudeL) << 2;
+						*output++ = multiply_32x32_rshift32(out, amplitudeR) << 2;
+						input0++;
+						input1++;
+					} while (++output != oscBufferEnd);
+				} else {
+				int32_t const* const oscBufferEnd = oscBuffer + numSamples;
 				do {
-					renderRingmodSample(output, amplitudeForRingMod, *input0, *input1);
+					*output += multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
 					input0++;
 					input1++;
 				} while (++output != oscBufferEnd);
+				}
 			}
 
 			// Or if FM
@@ -1437,6 +1395,13 @@ cantBeDoingOscSyncForFirstOsc:
 					}
 				}
 
+				int32_t* fmOscBuffer = oscBuffer;
+				if (unisonStereo) {
+					// buffer 0-1: stereo output, 2: modulators, 3: per-unison carriers
+					fmOscBuffer = spareRenderingBuffer[3];
+					memset(fmOscBuffer, 0, numSamples * sizeof(int32_t));
+				}
+
 				// Modulators
 				if (modulatorsActive[1]) {
 
@@ -1446,7 +1411,7 @@ cantBeDoingOscSyncForFirstOsc:
 					}
 
 					// Render mod1
-					renderSineWaveWithFeedback(spareRenderingBuffer[1], numSamples, &unisonParts[u].modulatorPhase[1],
+					renderSineWaveWithFeedback(spareRenderingBuffer[2], numSamples, &unisonParts[u].modulatorPhase[1],
 					                           modulatorAmplitudeLastTime[1], phaseIncrementModulator[1],
 					                           paramFinalValues[PARAM_LOCAL_MODULATOR_1_FEEDBACK],
 					                           &unisonParts[u].modulatorFeedback[1], false,
@@ -1455,7 +1420,7 @@ cantBeDoingOscSyncForFirstOsc:
 					// If mod1 is modulating mod0...
 					if (sound->modulator1ToModulator0) {
 						// .. render modulator0, receiving the FM from mod1
-						renderFMWithFeedback(spareRenderingBuffer[1], numSamples, NULL,
+						renderFMWithFeedback(spareRenderingBuffer[2], numSamples, NULL,
 						                     &unisonParts[u].modulatorPhase[0], modulatorAmplitudeLastTime[0],
 						                     phaseIncrementModulator[0],
 						                     paramFinalValues[PARAM_LOCAL_MODULATOR_0_FEEDBACK],
@@ -1465,7 +1430,7 @@ cantBeDoingOscSyncForFirstOsc:
 					// Otherwise, so long as modulator0 is in fact active, render it separately and add it
 					else if (modulatorsActive[0]) {
 						renderSineWaveWithFeedback(
-						    spareRenderingBuffer[1], numSamples, &unisonParts[u].modulatorPhase[0],
+						    spareRenderingBuffer[2], numSamples, &unisonParts[u].modulatorPhase[0],
 						    modulatorAmplitudeLastTime[0], phaseIncrementModulator[0],
 						    paramFinalValues[PARAM_LOCAL_MODULATOR_0_FEEDBACK], &unisonParts[u].modulatorFeedback[0],
 						    true, modulatorAmplitudeIncrements[0]);
@@ -1474,7 +1439,7 @@ cantBeDoingOscSyncForFirstOsc:
 				else {
 					if (modulatorsActive[0]) {
 						renderSineWaveWithFeedback(
-						    spareRenderingBuffer[1], numSamples, &unisonParts[u].modulatorPhase[0],
+						    spareRenderingBuffer[2], numSamples, &unisonParts[u].modulatorPhase[0],
 						    modulatorAmplitudeLastTime[0], phaseIncrementModulator[0],
 						    paramFinalValues[PARAM_LOCAL_MODULATOR_0_FEEDBACK], &unisonParts[u].modulatorFeedback[0],
 						    false, modulatorAmplitudeIncrements[0]);
@@ -1484,7 +1449,7 @@ noModulatorsActive:
 						for (int s = 0; s < NUM_SOURCES; s++) {
 							if (sourceAmplitudes[s]) {
 								renderSineWaveWithFeedback(
-								    oscBuffer, numSamples, &unisonParts[u].sources[s].oscPos, sourceAmplitudesNow[s],
+								    fmOscBuffer, numSamples, &unisonParts[u].sources[s].oscPos, sourceAmplitudesNow[s],
 								    phaseIncrements[s], paramFinalValues[PARAM_LOCAL_CARRIER_0_FEEDBACK + s],
 								    &unisonParts[u].sources[s].carrierFeedback, true, sourceAmplitudeIncrements[s]);
 							}
@@ -1498,7 +1463,7 @@ noModulatorsActive:
 				for (int s = 0; s < NUM_SOURCES; s++) {
 					if (sourceAmplitudes[s]) {
 						renderFMWithFeedbackAdd(
-						    oscBuffer, numSamples, spareRenderingBuffer[1], &unisonParts[u].sources[s].oscPos,
+						    fmOscBuffer, numSamples, spareRenderingBuffer[2], &unisonParts[u].sources[s].oscPos,
 						    sourceAmplitudesNow[s], phaseIncrements[s],
 						    paramFinalValues[PARAM_LOCAL_CARRIER_0_FEEDBACK + s],
 						    &unisonParts[u].sources[s].carrierFeedback, sourceAmplitudeIncrements[s]);
@@ -1506,7 +1471,17 @@ noModulatorsActive:
 				}
 
 carriersDone : {}
+			   if (unisonStereo) {
+				   // double up the temp buffer
+				   didStereoTempBuffer = true;
+					for (int i = 0; i < numSamples; i++) {
+						oscBuffer[(i << 1)] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeL) << 2;
+						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeR) << 2;
+					}
+			   }
 			}
+
+			// zzz
 		}
 
 skipUnisonPart : {}
@@ -1514,82 +1489,147 @@ skipUnisonPart : {}
 
 	// Output mono osc buffer. This is skipped (via goto statement above) if we ended up with a stereo buffer.
 	if (!renderingDirectlyIntoSoundBuffer) {
-		/*
-		do {
-			int32_t distanceToGoL = *oscBufferPos - hpfMem;
-			hpfMem += distanceToGoL >> 11;
-			*oscBufferPos -= hpfMem;
+		if (didStereoTempBuffer) {
+			int32_t* const oscBufferEnd = oscBuffer + (numSamples << 1);
 
-		} while (++oscBufferPos != oscBufferEnd);
+			// Filters
+			filterSets[0].renderLong(oscBuffer, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples, 2);
+			filterSets[1].renderLong(oscBuffer + 1, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples, 2);
 
-		oscBufferPos = oscBuffer;
-		*/
+			// No clipping
+			if (!sound->clippingAmount) {
 
-		int32_t* const oscBufferEnd = oscBuffer + numSamples;
-		filterSets[0].renderLong(oscBuffer, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples);
+				int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
+				StereoSample* __restrict__ outputSample = (StereoSample*)soundBuffer;
+				int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
 
-		// No clipping
-		if (!sound->clippingAmount) {
+				do {
+					int32_t outputSampleL = *(oscBufferPos++);
+					int32_t outputSampleR = *(oscBufferPos++);
 
-			int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
-			int32_t* __restrict__ outputSample = soundBuffer;
-			int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
-
-			do {
-				int32_t output = *oscBufferPos;
-
-				if (synthMode != SYNTH_MODE_FM) {
 					overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-					output = multiply_32x32_rshift32_rounded(output, overallOscAmplitudeNow) << 1;
-				}
+					outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
+					outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
 
-				if (soundRenderingInStereo) {
+					// Write to the output buffer, panning or not
 					if (doPanning) {
-						((StereoSample*)outputSample)->addPannedMono(output, amplitudeL, amplitudeR);
+						outputSample->addPannedStereo(outputSampleL, outputSampleR, amplitudeL, amplitudeR);
 					}
 					else {
-						((StereoSample*)outputSample)->addMono(output);
+						outputSample->addStereo(outputSampleL, outputSampleR);
 					}
-					outputSample += 2;
-				}
-				else {
-					*outputSample += output;
+
 					outputSample++;
-				}
-			} while (++oscBufferPos != oscBufferEnd);
-		}
+				} while (oscBufferPos != oscBufferEnd);
+			}
 
-		// Yes clipping
-		else {
+			// Yes clipping
+			else {
 
-			int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
-			int32_t* __restrict__ outputSample = soundBuffer;
-			int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
+				int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
+				StereoSample* __restrict__ outputSample = (StereoSample*)soundBuffer;
+				int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
 
-			do {
-				int32_t output = *oscBufferPos;
+				do {
+					int32_t outputSampleL = *(oscBufferPos++);
+					int32_t outputSampleR = *(oscBufferPos++);
 
-				if (synthMode != SYNTH_MODE_FM) {
 					overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
-					output = multiply_32x32_rshift32_rounded(output, overallOscAmplitudeNow) << 1;
-				}
+					outputSampleL = multiply_32x32_rshift32_rounded(outputSampleL, overallOscAmplitudeNow) << 1;
+					outputSampleR = multiply_32x32_rshift32_rounded(outputSampleR, overallOscAmplitudeNow) << 1;
 
-				sound->saturate(&output, &lastSaturationTanHWorkingValue[0]);
+					sound->saturate(&outputSampleL, &lastSaturationTanHWorkingValue[0]);
+					sound->saturate(&outputSampleR, &lastSaturationTanHWorkingValue[1]);
 
-				if (soundRenderingInStereo) {
+					// Write to the output buffer, panning or not
 					if (doPanning) {
-						((StereoSample*)outputSample)->addPannedMono(output, amplitudeL, amplitudeR);
+						outputSample->addPannedStereo(outputSampleL, outputSampleR, amplitudeL, amplitudeR);
 					}
 					else {
-						((StereoSample*)outputSample)->addMono(output);
+						outputSample->addStereo(outputSampleL, outputSampleR);
 					}
-					outputSample += 2;
-				}
-				else {
-					*outputSample += output;
+
 					outputSample++;
-				}
+				} while (oscBufferPos != oscBufferEnd);
+			}
+		} else {
+			/*
+			do {
+				int32_t distanceToGoL = *oscBufferPos - hpfMem;
+				hpfMem += distanceToGoL >> 11;
+				*oscBufferPos -= hpfMem;
+
 			} while (++oscBufferPos != oscBufferEnd);
+
+			oscBufferPos = oscBuffer;
+			*/
+
+			int32_t* const oscBufferEnd = oscBuffer + numSamples;
+			filterSets[0].renderLong(oscBuffer, oscBufferEnd, filterSetConfig, sound->lpfMode, numSamples);
+
+			// No clipping
+			if (!sound->clippingAmount) {
+
+				int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
+				int32_t* __restrict__ outputSample = soundBuffer;
+				int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
+
+				do {
+					int32_t output = *oscBufferPos;
+
+					if (synthMode != SYNTH_MODE_FM) {
+						overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
+						output = multiply_32x32_rshift32_rounded(output, overallOscAmplitudeNow) << 1;
+					}
+
+					if (soundRenderingInStereo) {
+						if (doPanning) {
+							((StereoSample*)outputSample)->addPannedMono(output, amplitudeL, amplitudeR);
+						}
+						else {
+							((StereoSample*)outputSample)->addMono(output);
+						}
+						outputSample += 2;
+					}
+					else {
+						*outputSample += output;
+						outputSample++;
+					}
+				} while (++oscBufferPos != oscBufferEnd);
+			}
+
+			// Yes clipping
+			else {
+
+				int32_t const* __restrict__ oscBufferPos = oscBuffer; // For traversal
+				int32_t* __restrict__ outputSample = soundBuffer;
+				int32_t overallOscAmplitudeNow = overallOscAmplitudeLastTime;
+
+				do {
+					int32_t output = *oscBufferPos;
+
+					if (synthMode != SYNTH_MODE_FM) {
+						overallOscAmplitudeNow += overallOscillatorAmplitudeIncrement;
+						output = multiply_32x32_rshift32_rounded(output, overallOscAmplitudeNow) << 1;
+					}
+
+					sound->saturate(&output, &lastSaturationTanHWorkingValue[0]);
+
+					if (soundRenderingInStereo) {
+						if (doPanning) {
+							((StereoSample*)outputSample)->addPannedMono(output, amplitudeL, amplitudeR);
+						}
+						else {
+							((StereoSample*)outputSample)->addMono(output);
+						}
+						outputSample += 2;
+					}
+					else {
+						*outputSample += output;
+						outputSample++;
+					}
+				} while (++oscBufferPos != oscBufferEnd);
+			}
 		}
 	}
 
@@ -1934,7 +1974,7 @@ void Voice::renderFMWithFeedbackAdd(int32_t* bufferStart, int numSamples, int32_
 //		and we might as well just apply amplitude while that's happening, which is exactly how it is currently.
 
 void Voice::renderBasicSource(Sound* sound, ParamManagerForTimeline* paramManager, int s,
-                              int32_t* __restrict__ oscBuffer, int numSamples, int32_t sourceAmplitude,
+                              int32_t* __restrict__ oscBuffer, int numSamples, bool stereoBuffer, int32_t sourceAmplitude,
                               bool* __restrict__ unisonPartBecameInactive, int32_t overallPitchAdjust, bool doOscSync,
                               uint32_t* __restrict__ oscSyncPos, uint32_t* __restrict__ oscSyncPhaseIncrements,
                               int32_t amplitudeIncrement, uint32_t* __restrict__ getPhaseIncrements,
@@ -1989,6 +2029,13 @@ pitchTooHigh:
 				continue;
 			}
 		}
+
+		bool unisonStereo = sound->unisonStereoSpread && sound->numUnison > 1 && stereoBuffer;
+		int32_t amplitudeL, amplitudeR;
+		shouldDoPanning((unisonStereo ? sound->unisonPan[u] : 0), &amplitudeL, &amplitudeR);
+		// used if mono source but unisonStereo active
+		// TODO: static allocation
+		int32_t extrabuffer[SSI_TX_BUFFER_NUM_SAMPLES*2];
 
 		// If sample...
 		if (sound->sources[s].oscType == OSC_TYPE_SAMPLE) {
@@ -2159,6 +2206,18 @@ dontUseCache : {}
 				}
 			}
 
+			int32_t* renderBuffer = oscBuffer;
+
+			if (unisonStereo) {
+				// TODO: I first wanted to integrate this with voiceSample->render()'s own
+				// amplitude control but it is just too complex - multiple copies of
+				// the amp logic depending if caching is used or not, timestretching or not,
+				// for now settle for "don't pay what you don't use", i e no extra copies/maths
+				// if you don't use unison stereo on a sample - bfredl
+				memset(extrabuffer, 0, sizeof extrabuffer);
+				renderBuffer = extrabuffer;
+			}
+
 			// We no longer do caching when there's just time stretching with no pitch adjustment, because the time stretching algorithm is so efficient,
 			// playing back the cache is hardly any faster than just doing the time stretching (once perc info has been cached) - and, crucially, creating / writing to the cache in the first place
 			// is quite inefficient when time stretching, because when we're not writing to the cache, that allows us to do a special optimization not otherwise available
@@ -2166,9 +2225,26 @@ dontUseCache : {}
 			// to the osc buffer).
 
 			bool stillActive =
-			    voiceSample->render(&guides[s], oscBuffer, numSamples, sample, numChannels, loopingType, phaseIncrement,
+			    voiceSample->render(&guides[s], renderBuffer, numSamples, sample, numChannels, loopingType, phaseIncrement,
 			                        timeStretchRatio, sourceAmplitude, amplitudeIncrement, interpolationBufferSize,
 			                        sound->sources[s].sampleControls.interpolationMode, getPriorityRating());
+
+			if (unisonStereo) {
+				if (numSamples == 2) {
+					// TODO: society if renderBasicSource() took a StereoSample[] buffer already
+					for (int i = 0; i < numSamples; i++) {
+						oscBuffer[(i << 1)] += multiply_32x32_rshift32(renderBuffer[(i << 1)], amplitudeL) << 2;
+						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(renderBuffer[(i << 1) + 1], amplitudeR) << 2;
+					}
+				} else {
+					// TODO: if render buffer was typed we could use addPannedMono()
+					for (int i = 0; i < numSamples; i++) {
+						oscBuffer[(i << 1)] += multiply_32x32_rshift32(renderBuffer[i], amplitudeL) << 2;
+						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(renderBuffer[i], amplitudeR) << 2;
+					}
+				}
+			}
+
 			if (!stillActive) {
 				goto instantUnassign;
 			}
@@ -2268,7 +2344,7 @@ dontUseCache : {}
 				// Stereo
 				else {
 
-					int numChannelsAfterCondensing = AudioEngine::renderInStereo ? 2 : 1;
+					int numChannelsAfterCondensing = stereoBuffer ? 2 : 1;
 
 					int32_t const* const oscBufferEnd = oscBuffer + numSamples * numChannelsAfterCondensing;
 
@@ -2280,7 +2356,7 @@ dontUseCache : {}
 						int32_t sampleR = inputReadPos[1];
 
 						// If condensing to mono, do that now
-						if (!AudioEngine::renderInStereo) {
+						if (!stereoBuffer) {
 							sampleL = ((sampleL >> 1) + (sampleR >> 1));
 						}
 
@@ -2288,7 +2364,7 @@ dontUseCache : {}
 						*(oscBufferPos++) += multiply_32x32_rshift32(sampleL, sourceAmplitudeNow) << 4;
 
 						// Right channel
-						if (AudioEngine::renderInStereo) {
+						if (stereoBuffer) {
 							*(oscBufferPos++) += multiply_32x32_rshift32(sampleR, sourceAmplitudeNow) << 4;
 						}
 
@@ -2320,15 +2396,12 @@ dontUseCache : {}
 				oscSyncPhaseIncrementsThisUnison = oscSyncPhaseIncrements[u];
 			}
 
-			bool stereo = false;
 
-			int32_t monobuffer[SSI_TX_BUFFER_NUM_SAMPLES];
 			int32_t* renderBuffer = oscBuffer;
 
-			if (sound->unisonStereoSpread && sound->numUnison > 1 && AudioEngine::renderInStereo) {
-				stereo = true;
-				memset(monobuffer, 0, sizeof monobuffer);
-				renderBuffer = monobuffer;
+			if (stereoBuffer) {
+				memset(extrabuffer, 0, sizeof extrabuffer);  // TODO: half
+				renderBuffer = extrabuffer;
 			}
 
 			int32_t* oscBufferEnd =
@@ -2342,9 +2415,7 @@ dontUseCache : {}
 			          doOscSync, oscSyncPosThisUnison, oscSyncPhaseIncrementsThisUnison, oscRetriggerPhase,
 			          waveIndexIncrement);
 
-			if (stereo) {
-				int32_t amplitudeL, amplitudeR;
-				shouldDoPanning(sound->unisonPan[u], &amplitudeL, &amplitudeR);
+			if (stereoBuffer) {
 				// TODO: if render buffer was typed we could use addPannedMono()
 				for (int i = 0; i < numSamples; i++) {
 					oscBuffer[(i << 1)] += multiply_32x32_rshift32(renderBuffer[i], amplitudeL) << 2;
