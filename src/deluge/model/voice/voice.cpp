@@ -1253,15 +1253,16 @@ decidedWhichBufferRenderingInto:
 				}
 			}
 		}
-
-		// If we rendered sources in stereo, and therefore have already output the osc buffer, skip some stuff
-		if (sourcesToRenderInStereo) {
-			goto renderingDone;
-		}
 	}
 
 	// Otherwise (FM and ringmod) we go through each unison first, and for each one we render both sources together
 	else {
+
+		if (stereoUnison) {
+			// oscBuffer is always a stereo temp buffer
+			didStereoTempBuffer = true;
+			memset(oscBuffer, 0, 2 * numSamples * sizeof(int32_t));
+		}
 
 		// For each unison part
 		for (int u = 0; u < sound->numUnison; u++) {
@@ -1345,21 +1346,21 @@ cantBeDoingOscSyncForFirstOsc:
 				int32_t* __restrict__ input1 = spareRenderingBuffer[3];
 
 				if (unisonStereo) {
-				int32_t const* const oscBufferEnd = oscBuffer + 2*numSamples;
+					int32_t const* const oscBufferEnd = oscBuffer + 2*numSamples;
 					do {
 						int32_t out = multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
 						*output++ = multiply_32x32_rshift32(out, amplitudeL) << 2;
 						*output++ = multiply_32x32_rshift32(out, amplitudeR) << 2;
 						input0++;
 						input1++;
-					} while (++output != oscBufferEnd);
+					} while (output != oscBufferEnd);
 				} else {
-				int32_t const* const oscBufferEnd = oscBuffer + numSamples;
-				do {
-					*output += multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
-					input0++;
-					input1++;
-				} while (++output != oscBufferEnd);
+					int32_t const* const oscBufferEnd = oscBuffer + numSamples;
+					do {
+						*output += multiply_32x32_rshift32_rounded(multiply_32x32_rshift32(*input0, *input1), amplitudeForRingMod);
+						input0++;
+						input1++;
+					} while (++output != oscBufferEnd);
 				}
 			}
 
@@ -1473,7 +1474,6 @@ noModulatorsActive:
 carriersDone : {}
 			   if (unisonStereo) {
 				   // double up the temp buffer
-				   didStereoTempBuffer = true;
 					for (int i = 0; i < numSamples; i++) {
 						oscBuffer[(i << 1)] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeL) << 2;
 						oscBuffer[(i << 1) + 1] += multiply_32x32_rshift32(fmOscBuffer[i], amplitudeR) << 2;
