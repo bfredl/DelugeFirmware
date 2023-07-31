@@ -404,8 +404,8 @@ ActionResult KeyboardScreen::buttonAction(hid::Button b, bool on, bool inCardRou
 	}
 
 	// Kit button
-	else if (b == KIT) {
-		if (on && currentUIMode == UI_MODE_NONE) {
+	else if (b == KIT && currentUIMode == UI_MODE_NONE) {
+		if (on) {
 			if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(InstrumentType::KIT);
 			}
@@ -416,8 +416,8 @@ ActionResult KeyboardScreen::buttonAction(hid::Button b, bool on, bool inCardRou
 		}
 	}
 
-	else if (b == SYNTH) {
-		if (on && currentUIMode == UI_MODE_NONE) {
+	else if (b == SYNTH && currentUIMode == UI_MODE_NONE) {
+		if (on) {
 			if (Buttons::isNewOrShiftButtonPressed()) {
 				createNewInstrument(InstrumentType::SYNTH);
 			}
