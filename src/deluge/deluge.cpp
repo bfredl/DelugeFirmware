@@ -28,6 +28,7 @@
 #include "modulation/params/param_manager.h"
 #include "processing/engines/audio_engine.h"
 #include "storage/audio/audio_file_manager.h"
+#include "util/pack.h"
 
 #include <new>
 #include <stdlib.h>
@@ -602,6 +603,8 @@ extern "C" int32_t deluge_main(void) {
 #ifdef TEST_GENERAL_MEMORY_ALLOCATION
 	GeneralMemoryAllocator::get().test();
 #endif
+
+	init_crc_table();
 
 	// Setup for gate output
 	cvEngine.init();

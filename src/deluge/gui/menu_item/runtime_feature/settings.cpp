@@ -16,6 +16,7 @@
 */
 
 #include "settings.h"
+#include "devSysexSetting.h"
 #include "setting.h"
 
 #include "gui/ui/sound_editor.h"
@@ -39,10 +40,12 @@ Setting menuPatchCableResolution(RuntimeFeatureSettingType::PatchCableResolution
 Setting menuCatchNotes(RuntimeFeatureSettingType::CatchNotes);
 Setting menuDeleteUnusedKitRows(RuntimeFeatureSettingType::DeleteUnusedKitRows);
 Setting menuAltGoldenKnobDelayParams(RuntimeFeatureSettingType::AltGoldenKnobDelayParams);
+DevSysexSetting menuDevSysexAllowed(RuntimeFeatureSettingType::DevSysexAllowed);
 
 std::array<MenuItem*, RuntimeFeatureSettingType::MaxElement> subMenuEntries{
     &menuDrumRandomizer,       &menuMasterCompressorFx, &menuFineTempo,           &menuQuantize,
     &menuPatchCableResolution, &menuCatchNotes,         &menuDeleteUnusedKitRows, &menuAltGoldenKnobDelayParams,
+    &menuDevSysexAllowed,
 };
 
 Settings::Settings(char const* name, char const* title)

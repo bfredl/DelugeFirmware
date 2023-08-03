@@ -85,6 +85,10 @@ void RuntimeFeatureSettings::init() {
 	SetupOnOffSetting(settings[RuntimeFeatureSettingType::AltGoldenKnobDelayParams],
 	                  "Alternative Golden Knob Delay Params", "altGoldenKnobDelayParams",
 	                  RuntimeFeatureStateToggle::Off);
+
+	// devSysexAllowed
+	SetupOnOffSetting(settings[RuntimeFeatureSettingType::DevSysexAllowed], "Allow Insecure Develop Sysex Messages",
+	                  "devSysexAllowed", RuntimeFeatureStateToggle::Off);
 }
 
 void RuntimeFeatureSettings::readSettingsFromFile() {
