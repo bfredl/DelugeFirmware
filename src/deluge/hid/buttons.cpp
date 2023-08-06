@@ -19,6 +19,7 @@
 #include "definitions_cxx.hpp"
 #include "gui/ui/audio_recorder.h"
 #include "gui/ui/load/load_song_ui.h"
+#include "gui/ui/load/load_fw.h"
 #include "gui/ui/ui.h"
 #include "gui/views/view.h"
 #include "model/mod_controllable/mod_controllable.h"
@@ -64,6 +65,12 @@ ActionResult buttonAction(hid::Button b, bool on, bool inCardRoutine) {
 			goto dealtWith;
 		}
 	}
+
+	if (b == SELECT_ENC && on
+		     && buttonStates[modButtonX[0]][modButtonY[0]] ) {
+			     openUI(&loadFirmwareUI);
+				 return ActionResult::DEALT_WITH;
+		     }
 
 	result = getCurrentUI()->buttonAction(b, on, inCardRoutine);
 
