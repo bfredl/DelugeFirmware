@@ -26,6 +26,7 @@
 #include "hid/display/numeric_driver.h"
 #include "hid/led/indicator_leds.h"
 #include "hid/led/pad_leds.h"
+#include "hid/hid_sysex.h"
 #include "model/clip/clip_minder.h"
 #include "model/clip/instrument_clip_minder.h"
 #include "playback/playback_handler.h"
@@ -176,6 +177,10 @@ void UITimerManager::routine() {
 
 				case TIMER_OLED_SCROLLING_AND_BLINKING:
 					OLED::scrollingAndBlinkingTimerEvent();
+					break;
+
+				case TIMER_SYSEX_DISPLAY:
+					HIDSysex::sendDisplayIfChanged();
 					break;
 #endif
 				}

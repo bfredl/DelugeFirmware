@@ -24,6 +24,7 @@
 #include "drivers/pic/pic.h"
 #include "gui/ui_timer_manager.h"
 #include "hid/display/oled.h"
+#include "hid/hid_sysex.h"
 #include "processing/engines/audio_engine.h"
 #include "util/d_string.h"
 #include <string.h>
@@ -707,6 +708,7 @@ void sendMainImage() {
 #endif
 
 	enqueueSPITransfer(0, oledCurrentImage[0]);
+	HIDSysex::sendDisplayIfChanged();
 }
 
 #define TEXT_MAX_NUM_LINES 8
