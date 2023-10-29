@@ -17,6 +17,7 @@
 
 #include "settings.h"
 #include "devSysexSetting.h"
+#include "emulated_display.h"
 #include "setting.h"
 #include "shift_is_sticky.h"
 
@@ -50,6 +51,7 @@ Setting menuHighlightIncomingNotes(RuntimeFeatureSettingType::HighlightIncomingN
 Setting menuDisplayNornsLayout(RuntimeFeatureSettingType::DisplayNornsLayout);
 ShiftIsSticky menuShiftIsSticky{};
 Setting menuLightShiftLed(RuntimeFeatureSettingType::LightShiftLed);
+EmulatedDisplay menuEmulatedDisplay{};
 
 Submenu subMenuAutomation{
     l10n::String::STRING_FOR_COMMUNITY_FEATURE_AUTOMATION,
@@ -77,6 +79,7 @@ std::array<MenuItem*, RuntimeFeatureSettingType::MaxElement - kNonTopLevelSettin
     &menuDisplayNornsLayout,
     &menuShiftIsSticky,
     &menuLightShiftLed,
+    &menuEmulatedDisplay,
 };
 
 Settings::Settings(l10n::String name, l10n::String title) : menu_item::Submenu(name, title, subMenuEntries) {

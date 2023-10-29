@@ -16,6 +16,7 @@
  */
 
 #include "hid/display/seven_segment.h"
+#include "hid/display/oled.h"
 #include "definitions_cxx.hpp"
 #include "drivers/pic/pic.h"
 #include "gui/ui_timer_manager.h"
@@ -538,7 +539,11 @@ void SevenSegment::render() {
 	layer->render(segments.data());
 	lastDisplay_ = segments;
 
-	PIC::update7SEG(segments);
+	if (have_oled_screen) {
+		OLED::renderEmulated7Seg(segments);
+	} else {
+		PIC::update7SEG(segments);
+	}
 	HIDSysex::sendDisplayIfChanged();
 }
 

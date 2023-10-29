@@ -77,6 +77,31 @@ static void SetupSyncScalingActionSetting(RuntimeFeatureSetting& setting, std::s
 	};
 }
 
+static void SetupEmulatedDisplaySetting(RuntimeFeatureSetting& setting, std::string_view displayName,
+                                          std::string_view xmlName, RuntimeFeatureStateEmulatedDisplay def) {
+	setting.displayName = displayName;
+	setting.xmlName = xmlName;
+	setting.value = static_cast<uint32_t>(def);
+
+	// what is displayed depends on the physical display type more the active mode
+	bool have_oled = deluge::hid::display::have_oled_screen;
+	setting.options = {
+	    {
+	        .displayName = have_oled ? "OLED" : "7SEG",
+	        .value = RuntimeFeatureStateEmulatedDisplay::Hardware,
+	    },
+	    {
+	        .displayName = display->haveOLED() ? "Toggle" : "TOGL",
+	        .value = RuntimeFeatureStateEmulatedDisplay::Toggle,
+	    },
+	    {
+	        .displayName = have_oled ? "7SEG" : "OLED",
+	        .value = RuntimeFeatureStateEmulatedDisplay::OnBoot,
+	    },
+	};
+}
+
+
 void RuntimeFeatureSettings::init() {
 	using enum deluge::l10n::String;
 	// Drum randomizer
@@ -151,6 +176,10 @@ void RuntimeFeatureSettings::init() {
 	// LightShiftLed
 	SetupOnOffSetting(settings[RuntimeFeatureSettingType::LightShiftLed], "Light Shift", "lightShift",
 	                  RuntimeFeatureStateToggle::Off);
+
+	// EmulatedDisplay
+	SetupEmulatedDisplaySetting(settings[RuntimeFeatureSettingType::EmulatedDisplay], "Emulated Display", "emulatedDisplay",
+	                  RuntimeFeatureStateEmulatedDisplay::Hardware);
 }
 
 void RuntimeFeatureSettings::readSettingsFromFile() {

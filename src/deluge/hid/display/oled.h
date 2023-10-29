@@ -67,7 +67,7 @@ public:
 	static void invertArea(int32_t xMin, int32_t width, int32_t startY, int32_t endY,
 	                       uint8_t image[][OLED_MAIN_WIDTH_PIXELS]);
 
-	static void sendMainImage();
+	static void sendMainImage(bool send = true);
 
 	static void setupPopup(int32_t width, int32_t height);
 	static void removePopup();
@@ -87,6 +87,8 @@ public:
 
 	void consoleTimerEvent();
 	static void scrollingAndBlinkingTimerEvent();
+
+	static void renderEmulated7Seg(const std::array<uint8_t, kNumericDisplayLength>& display);
 
 	static uint8_t oledMainImage[OLED_MAIN_HEIGHT_PIXELS >> 3][OLED_MAIN_WIDTH_PIXELS];
 	static uint8_t oledMainPopupImage[OLED_MAIN_HEIGHT_PIXELS >> 3][OLED_MAIN_WIDTH_PIXELS];
