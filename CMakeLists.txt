@@ -134,7 +134,7 @@ add_compile_options(
     -fno-inline-functions
     
     # Link time optimizations
-    $<$<CONFIG:RELEASE,RELWITHDEBINFO>:-flto=auto>
+    #$<$<CONFIG:RELEASE,RELWITHDEBINFO>:-flto=auto>
     $<$<CONFIG:RELEASE,RELWITHDEBINFO>:-fuse-linker-plugin>
     -ffunction-sections
     -fdata-sections
@@ -226,7 +226,7 @@ target_link_options(deluge PUBLIC
     #$<$<CXX_COMPILER_ID:GNU>:LINKER:--print-memory-usage>
 
     # Link-Time Optimization
-    $<$<CONFIG:RELEASE,RELWITHDEBINFO>:-flto=auto>
+    #$<$<CONFIG:RELEASE,RELWITHDEBINFO>:-flto=auto>
     $<$<CONFIG:RELEASE,RELWITHDEBINFO>:-fuse-linker-plugin>
 
     # Coloring
