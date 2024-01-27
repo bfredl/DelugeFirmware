@@ -493,6 +493,8 @@ PLACE_SDRAM_DATA Language english{
         {STRING_FOR_TRIGGER_CLOCK, "Trigger clock"},
         {STRING_FOR_FM_MODULATOR_1, "FM modulator 1"},
         {STRING_FOR_FM_MODULATOR_2, "FM modulator 2"},
+        {STRING_FOR_DEXED_1, "DX7 source 1"},
+        {STRING_FOR_DEXED_EDITOR, "DX7 patch editor"},
         {STRING_FOR_NOISE_LEVEL, "Noise level"},
         {STRING_FOR_MASTER_TRANSPOSE, "Master transpose"},
         {STRING_FOR_SYNTH_MODE, "Synth mode"},

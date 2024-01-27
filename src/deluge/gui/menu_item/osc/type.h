@@ -18,6 +18,7 @@
 #include "definitions_cxx.hpp"
 #include "gui/menu_item/formatted_title.h"
 #include "gui/menu_item/selection.h"
+#include "gui/menu_item/submenu.h"
 #include "gui/ui/sound_editor.h"
 #include "model/song/song.h"
 #include "processing/engines/audio_engine.h"
@@ -25,7 +26,8 @@
 #include "processing/source.h"
 #include "util/comparison.h"
 #include "util/misc.h"
-#include "dexed/dexeditor.h"
+
+extern deluge::gui::menu_item::Submenu dexedMenu;
 
 namespace deluge::gui::menu_item::osc {
 class Type final : public Selection, public FormattedTitle {
@@ -97,15 +99,7 @@ public:
 		if (soundEditor.currentSource->oscType != OscType::DEXED) {
 			return NULL;
 		}
-		dexedEditedSource = soundEditor.currentSource;
-		if (dexedUI != NULL) {
-			openUI(dexedUI);
-		} else {
-#ifdef DEXED_EDITOR
-			openUI(&dx7ui);
-#endif
-		}
-		return (MenuItem*)0xFFFFFFFF;
+		return (MenuItem*)&dexedMenu;
 	}
 };
 
