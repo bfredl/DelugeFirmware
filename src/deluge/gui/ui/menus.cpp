@@ -33,6 +33,7 @@
 #include "gui/menu_item/delay/sync.h"
 #include "gui/menu_item/dev_var/dev_var.h"
 #include "gui/menu_item/dexed_editor.h"
+#include "gui/menu_item/dexed_browse.h"
 #include "gui/menu_item/drum_name.h"
 #include "gui/menu_item/envelope/segment.h"
 #include "gui/menu_item/file_selector.h"
@@ -956,8 +957,8 @@ submenu::Modulator modulator0Menu{STRING_FOR_FM_MODULATOR_1, modulatorMenuItems,
 submenu::Modulator modulator1Menu{STRING_FOR_FM_MODULATOR_2, modulatorMenuItems, 1};
 
 // Submenu::SubmenuReferringToOneThing if we need to address osc1 and osc2 directly
-std::array<MenuItem*, 1> dexedMenuItems = {
-    &dexedEditorMenu,
+std::array<MenuItem*, 2> dexedMenuItems = {
+    &dexedBrowseMenu, &dexedEditorMenu,
 };
 menu_item::Submenu dexedMenu{STRING_FOR_FM_MODULATOR_1, dexedMenuItems};
 
