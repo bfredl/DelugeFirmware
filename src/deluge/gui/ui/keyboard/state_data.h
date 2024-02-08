@@ -25,6 +25,7 @@ constexpr int32_t kDefaultIsometricRowInterval = 5;
 struct KeyboardStateIsomorphic {
 	int32_t scrollOffset = (60 - (kDisplayHeight >> 2) * kDefaultIsometricRowInterval);
 	int32_t rowInterval = kDefaultIsometricRowInterval;
+	int32_t colInterval = 1;
 };
 
 struct KeyboardStateDrums {

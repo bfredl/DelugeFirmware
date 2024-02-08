@@ -30,7 +30,7 @@ public:
 	~KeyboardLayoutNorns() override = default;
 
 	void evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) override;
-	void handleVerticalEncoder(int32_t offset) override;
+	void handleVerticalEncoder(int32_t offset, bool shiftEnabled) override;
 	void handleHorizontalEncoder(int32_t offset, bool shiftEnabled) override;
 	void precalculate() override;
 

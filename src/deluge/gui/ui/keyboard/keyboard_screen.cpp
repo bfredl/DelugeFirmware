@@ -479,12 +479,12 @@ ActionResult KeyboardScreen::verticalEncoderAction(int32_t offset, bool inCardRo
 		return ActionResult::REMIND_ME_OUTSIDE_CARD_ROUTINE; // Allow sometimes.
 	}
 
-	if (Buttons::isShiftButtonPressed() && currentUIMode == UI_MODE_NONE) {
+	if (false && Buttons::isShiftButtonPressed() && currentUIMode == UI_MODE_NONE) {
 		getCurrentInstrumentClip()->colourOffset += offset;
 		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
 	}
 	else {
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleVerticalEncoder(offset);
+		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleVerticalEncoder(offset, (Buttons::isShiftButtonPressed() && isUIModeWithinRange(padActionUIModes)));
 		if (isUIModeWithinRange(padActionUIModes)) {
 			evaluateActiveNotes();
 			updateActiveNotes();

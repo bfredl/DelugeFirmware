@@ -30,7 +30,7 @@ public:
 	~KeyboardLayoutIsomorphic() override {}
 
 	void evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) override;
-	void handleVerticalEncoder(int32_t offset) override;
+	void handleVerticalEncoder(int32_t offset, bool shiftEnabled) override;
 	void handleHorizontalEncoder(int32_t offset, bool shiftEnabled) override;
 	void precalculate() override;
 
@@ -42,7 +42,7 @@ public:
 
 private:
 	inline uint8_t noteFromCoords(int32_t x, int32_t y) {
-		return getState().isomorphic.scrollOffset + x + y * getState().isomorphic.rowInterval;
+		return getState().isomorphic.scrollOffset + x  * getState().isomorphic.colInterval + y * getState().isomorphic.rowInterval;
 	}
 
 	RGB noteColours[kDisplayHeight * kMaxIsomorphicRowInterval + kDisplayWidth];

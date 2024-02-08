@@ -39,7 +39,20 @@ void KeyboardLayoutIsomorphic::evaluatePads(PressedPad presses[kMaxNumKeyboardPa
 	}
 }
 
-void KeyboardLayoutIsomorphic::handleVerticalEncoder(int32_t offset) {
+void KeyboardLayoutIsomorphic::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
+	if (shiftEnabled) {
+		KeyboardStateIsomorphic& state = getState().isomorphic;
+		state.colInterval += offset;
+		state.colInterval = std::clamp(state.colInterval, kMinIsomorphicRowInterval, kMaxIsomorphicRowInterval);
+
+		char buffer[13] = "Col step:   ";
+		auto displayOffset = (display->haveOLED() ? 10 : 0);
+		intToString(state.colInterval, buffer + displayOffset, 1);
+		display->displayPopup(buffer);
+
+		offset = 0; // Reset offset variable for processing scroll calculation without actually shifting
+	}
+
 	handleHorizontalEncoder(offset * getState().isomorphic.rowInterval, false);
 }
 
