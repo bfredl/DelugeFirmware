@@ -50,7 +50,7 @@ public:
 	virtual void evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) = 0;
 
 	/// Shift state not supplied since that function is already taken
-	virtual void handleVerticalEncoder(int32_t offset) = 0;
+	virtual void handleVerticalEncoder(int32_t offset, bool shiftEnabled) = 0;
 
 	/// Will be called with offset 0 to recalculate bounds on clip changes
 	virtual void handleHorizontalEncoder(int32_t offset, bool shiftEnabled) = 0;

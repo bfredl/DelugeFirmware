@@ -38,7 +38,7 @@ void KeyboardLayoutVelocityDrums::evaluatePads(PressedPad presses[kMaxNumKeyboar
 	}
 }
 
-void KeyboardLayoutVelocityDrums::handleVerticalEncoder(int32_t offset) {
+void KeyboardLayoutVelocityDrums::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
 	handleHorizontalEncoder(offset * (kDisplayWidth / getState().drums.edgeSize), false);
 }
 

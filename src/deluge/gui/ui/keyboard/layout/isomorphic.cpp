@@ -39,7 +39,20 @@ void KeyboardLayoutIsomorphic::evaluatePads(PressedPad presses[kMaxNumKeyboardPa
 	}
 }
 
-void KeyboardLayoutIsomorphic::handleVerticalEncoder(int32_t offset) {
+void KeyboardLayoutIsomorphic::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
+	if (shiftEnabled) {
+		KeyboardStateIsomorphic& state = getState().isomorphic;
+		state.colInterval += offset;
+		state.colInterval = std::clamp(state.colInterval, kMinIsomorphicRowInterval, kMaxIsomorphicRowInterval);
+
+		char buffer[13] = "Col step:   ";
+		auto displayOffset = (display->haveOLED() ? 10 : 0);
+		intToString(state.colInterval, buffer + displayOffset, 1);
+		display->displayPopup(buffer);
+
+		offset = 0; // Reset offset variable for processing scroll calculation without actually shifting
+	}
+
 	handleHorizontalEncoder(offset * getState().isomorphic.rowInterval, false);
 }
 
@@ -84,26 +97,37 @@ void KeyboardLayoutIsomorphic::precalculate() {
 }
 
 void KeyboardLayoutIsomorphic::renderPads(RGB image[][kDisplayWidth + kSideBarWidth]) {
+	const int kMaxOctaveSize = 50;
+	int octave_size = getScaleModeEnabled() ? 12 : 31;
 	// Precreate list of all active notes per octave
-	bool octaveActiveNotes[kOctaveSize] = {0};
+	bool octaveActiveNotes[kMaxOctaveSize] = {0};
 	for (uint8_t idx = 0; idx < currentNotesState.count; ++idx) {
-		octaveActiveNotes[((currentNotesState.notes[idx].note + kOctaveSize) - getRootNote()) % kOctaveSize] = true;
+		octaveActiveNotes[((currentNotesState.notes[idx].note + octave_size) - getRootNote()) % octave_size] = true;
 	}
 
 	// Precreate list of all scale notes per octave
-	bool octaveScaleNotes[kModesArraySize] = {0};
+	bool octaveScaleNotes[kMaxOctaveSize] = {0};
 	if (getScaleModeEnabled()) {
 		ModesArray& scaleNotes = getScaleNotes();
 		for (uint8_t idx = 0; idx < getScaleNoteCount(); ++idx) {
 			octaveScaleNotes[scaleNotes[idx]] = true;
 		}
+	} else {
+		octaveScaleNotes[0] = true;
+		octaveScaleNotes[5] = true;
+		octaveScaleNotes[10] = true;
+		octaveScaleNotes[13] = true;
+		octaveScaleNotes[18] = true;
+		octaveScaleNotes[23] = true;
+		octaveScaleNotes[28] = true;
 	}
 
 	// Iterate over grid image
 	for (int32_t y = 0; y < kDisplayHeight; ++y) {
 		int32_t noteCode = noteFromCoords(0, y);
 		int32_t normalizedPadOffset = noteCode - getState().isomorphic.scrollOffset;
-		int32_t noteWithinOctave = (uint16_t)((noteCode + kOctaveSize) - getRootNote()) % kOctaveSize;
+		int32_t noteWithinOctave = (uint16_t)((noteCode + octave_size) - getRootNote()) % octave_size;
+		int32_t colInterval = getState().isomorphic.colInterval;
 
 		for (int32_t x = 0; x < kDisplayWidth; x++) {
 			// Full colour for every octaves root and active notes
@@ -134,9 +158,9 @@ void KeyboardLayoutIsomorphic::renderPads(RGB image[][kDisplayWidth + kSideBarWi
 				}
 			}
 
-			++noteCode;
+			noteCode += colInterval;
 			++normalizedPadOffset;
-			noteWithinOctave = (noteWithinOctave + 1) % kOctaveSize;
+			noteWithinOctave = (noteWithinOctave + colInterval) % octave_size;
 		}
 	}
 }

@@ -39,7 +39,7 @@ void KeyboardLayoutInKey::evaluatePads(PressedPad presses[kMaxNumKeyboardPadPres
 	}
 }
 
-void KeyboardLayoutInKey::handleVerticalEncoder(int32_t offset) {
+void KeyboardLayoutInKey::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
 	handleHorizontalEncoder(offset * getState().inKey.rowInterval, false);
 }
 
