@@ -52,6 +52,8 @@ void DxParam::setValue(int val) {
 	} else if (param == -1) {
 		patch->random_detune = val;
 	}
+
+	soundEditor.currentSource->dxPatchChanged = true;
 }
 
 void DxParam::readValueAgain() {

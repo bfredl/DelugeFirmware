@@ -45,6 +45,7 @@ public:
 	MultiRangeArray ranges;
 
 	DxPatch* dxPatch;
+	bool dxPatchChanged = false;
 	SampleRepeatMode repeatMode;
 
 	int8_t timeStretchAmount;

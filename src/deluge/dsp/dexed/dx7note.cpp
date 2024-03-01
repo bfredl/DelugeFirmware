@@ -47,6 +47,12 @@ static const uint8_t init_voice[] = {
     7,  99, 99, 99, 99, 99, 99, 99, 00, 0,  0,  0,  0,  0,  0,  0,  0,  99, 0,  1,  0,  7,  99, 99, 99, 99,
     50, 50, 50, 50, 0,  0,  1,  35, 0,  0,  0,  1,  0,  3,  24, 73, 78, 73, 84, 32, 86, 79, 73, 67, 69, 63};
 
+static int dxNoteToFreq(int note) {
+	 const int base = 50857777; // (1 << 24) * (log(440) / log(2) - 69/12)
+	const int step = (1 << 24) / 12;
+	return base + step * note;
+}
+
 
 DxPatch::DxPatch() {
 	memcpy(params, init_voice, sizeof params);
@@ -222,9 +228,15 @@ DxVoice::DxVoice() {
 }
 
 // TODO: recalculate Scale() using logfreq
-void DxVoice::init(DxPatch& newp, int midinote, int logfreq, int velocity) {
+void DxVoice::init(DxPatch& newp, int midinote, int velocity) {
 	patch = newp.params;
 	random_detune_scale = newp.random_detune;
+	lastVelocity = velocity;
+
+	// TODO: this is not used for the base pitch, but it is used for calculating the detune ratios.
+	// We might want to base that on note+transpose+masterTranspose, or more likely, completely
+	// change over how "detune" is calculated (post-LUT)
+	int logFreq = dxNoteToFreq(midinote);
 
 	for (int op = 0; op < 6; op++) {
 		int off = op * 21;
@@ -247,7 +259,7 @@ void DxVoice::init(DxPatch& newp, int midinote, int logfreq, int velocity) {
 
 		detune_per_voice[op] = getNoise() >> 16;
 
-		int32_t freq = osc_freq(logfreq, mode, coarse, fine, detune, detune_per_voice[op]);
+		int32_t freq = osc_freq(logFreq, mode, coarse, fine, detune, detune_per_voice[op]);
 		basepitch_[op] = freq;
 	}
 	pitchenv_.set(pitchenv_p());
@@ -395,10 +407,12 @@ void DxVoice::updateBasePitches(int logFreq_for_detune) {
 }
 
 // TODO: can share yet more codes with ::init()
-void DxVoice::update(DxPatch& newp, int midinote, int logFreq, int velocity) {
+void DxVoice::update(DxPatch& newp, int midinote) {
 	patch = newp.params;
 	random_detune_scale = newp.random_detune;
 
+	int logFreq = dxNoteToFreq(midinote);
+	int velocity = lastVelocity;
 	for (int op = 0; op < 6; op++) {
 		int off = op * 21;
 		int mode = patch[off + 17];

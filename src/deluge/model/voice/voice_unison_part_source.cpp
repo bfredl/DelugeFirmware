@@ -77,14 +77,8 @@ bool VoiceUnisonPartSource::noteOn(Voice* voice, Source* source, VoiceSamplePlay
 				return false;
 		}
 
-		// TODO: this is not used for the base pitch, but it is used for calculating the detune ratios.
-		// We might want to base that on note+transpose+masterTranspose, or more likely, completely
-		// change over how "detune" is calculated (post-LUT)
-		const int base = 50857777; // (1 << 24) * (log(440) / log(2) - 69/12)
-		const int step = (1 << 24) / 12;
-		int freq = base + step * voice->noteCodeAfterArpeggiation;
 		DxPatch* patch = source->ensureDxPatch();
-		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, freq, velocity);
+		dxVoice->init(*patch, voice->noteCodeAfterArpeggiation, velocity);
 	}
 	else {
 		if (oscRetriggerPhase != 0xFFFFFFFF) {

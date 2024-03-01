@@ -77,7 +77,7 @@ struct DxVoiceCtrl {
 class DxVoice {
 public:
 	DxVoice();
-	void init(DxPatch& p, int midinote, int logfreq, int velocity);
+	void init(DxPatch& p, int midinote, int velocity);
 	// Note: this _adds_ to the buffer. Interesting question whether it's
 	// worth it...
 	void compute(int32_t* buf, int n, int pitch, const DxPatch* ctrls_patch, const DxVoiceCtrl* ctrls_voice);
@@ -91,7 +91,7 @@ public:
 	// keyup, that won't work.
 
 	// PG:add the update
-	void update(DxPatch& p, int midinote, int logFreq, int velocity);
+	void update(DxPatch& p, int midinote);
 	void updateBasePitches(int logFreq);
 	void transferState(DxVoice& src);
 	void transferSignal(DxVoice& src);
@@ -117,6 +117,7 @@ private:
 
 	uint8_t* patch; // raw patch, same as p->currentPatch
 	int random_detune_scale;
+	uint8_t lastVelocity;
 
 	EnvParams& env_p(int op) { return *(EnvParams*)&patch[op * 21]; }
 	EnvParams& pitchenv_p() { return *(EnvParams*)&patch[126]; }

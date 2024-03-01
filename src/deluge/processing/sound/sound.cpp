@@ -2389,6 +2389,9 @@ void Sound::render(ModelStackWithThreeMainThings* modelStack, StereoSample* outp
 
 	sourcesChanged = 0;
 	whichExpressionSourcesChangedAtSynthLevel = 0;
+	for (int i = 0; i < kNumSources; i++) {
+		sources[i].dxPatchChanged = false;
+	}
 
 	// Unlike all the other possible reasons we might want to start skipping rendering, delay.repeatsUntilAbandon may
 	// have changed state just now.

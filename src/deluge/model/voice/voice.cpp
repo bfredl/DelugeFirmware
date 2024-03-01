@@ -2464,6 +2464,9 @@ dontUseCache: {}
 			DxVoiceCtrl ctrl{};
 			ctrl.ampmod = paramFinalValues[params::LOCAL_OSC_A_PHASE_WIDTH + s] >> 13;
 			// ctrl.ratemod = paramFinalValues[params::LOCAL_CARRIER_0_FEEDBACK + s] >> 16;
+			if (sound->sources[s].dxPatchChanged) {
+				unisonParts[u].sources[s].dxVoice->update(*patch, noteCodeAfterArpeggiation);
+			}
 			unisonParts[u].sources[s].dxVoice->compute(uniBuf, numSamples, adjpitch, patch, &ctrl);
 
 			int32_t sourceAmplitudeNow = sourceAmplitude;
