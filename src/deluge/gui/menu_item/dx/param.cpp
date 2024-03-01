@@ -63,6 +63,7 @@ void DxParam::readValueAgain() {
 	int x = -1, y = -1;
 
 	upper_limit = 99;
+	is_fine = false;
 	int op = param / 21;
 	int idx = param % 21;
 	if (param < 6 * 21) {
@@ -74,6 +75,9 @@ void DxParam::readValueAgain() {
 		}
 		else if (idx == 14) {
 			upper_limit = 3;
+		}
+		else if (idx == 19) {
+			is_fine = true;
 		}
 		else if (idx == 20) {
 			upper_limit = 14;
@@ -119,15 +123,22 @@ void DxParam::readValueAgain() {
 void DxParam::selectEncoderAction(int32_t offset) {
 	int value = getValue();
 
-	bool scaleable = (param != 134 && param != 135);
-	int scale = (scaleable && Buttons::isShiftButtonPressed()) ? 10 : 1;
-
-	int newval = value + offset * scale;
+	int newval = value + offset;
 	if (newval > upper_limit) {
-		newval = upper_limit;
+		if (is_fine && patch->params[param-1] < 99) {
+			newval -= (upper_limit+1);
+			patch->params[param-1]++;
+		} else {
+			newval = upper_limit;
+		}
 	}
 	else if (newval < 0) {
-		newval = 0;
+		if (is_fine && patch->params[param-1] > 0) {
+			newval += (upper_limit+1);
+			patch->params[param-1]--;
+		} else {
+			newval = 0;
+		}
 	}
 
 	setValue(newval);

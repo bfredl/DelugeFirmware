@@ -42,6 +42,7 @@ public:
 
 	int param = 0;
 	int upper_limit = 0;
+	bool is_fine;
 	int32_t displayValue = 0;
 	DxPatch* patch;
 };
