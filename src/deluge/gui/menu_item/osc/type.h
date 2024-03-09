@@ -34,11 +34,20 @@ public:
 	Type(l10n::String name, l10n::String title_format_str) : Selection(name), FormattedTitle(title_format_str){};
 	void beginSession(MenuItem* navigatedBackwardFrom) override { Selection::beginSession(navigatedBackwardFrom); }
 
-	void readCurrentValue() override { this->setValue(soundEditor.currentSource->oscType); }
+	void readCurrentValue() override {
+		int32_t rawVal = (int32_t)soundEditor.currentSource->oscType;
+		if (soundEditor.currentSourceIndex > 0 && rawVal > (int32_t)OscType::DX7) {
+			rawVal -= 1;
+		}
+		this->setValue(rawVal);
+	}
 	void writeCurrentValue() override {
 
 		OscType oldValue = soundEditor.currentSource->oscType;
 		auto newValue = this->getValue<OscType>();
+		if (soundEditor.currentSourceIndex > 0 && (int32_t)newValue >= (int32_t)OscType::DX7) {
+			newValue = (OscType)((int32_t)newValue + 1);
+		}
 
 		auto needs_unassignment = {
 		    OscType::INPUT_L,
@@ -73,23 +82,27 @@ public:
 		    l10n::getView(STRING_FOR_SAW),           //<
 		    l10n::getView(STRING_FOR_ANALOG_SAW),    //<
 		    l10n::getView(STRING_FOR_WAVETABLE),     //<
-		    l10n::getView(STRING_FOR_SAMPLE),        //<
-		    l10n::getView(STRING_FOR_DX7),           //<
-		    l10n::getView(STRING_FOR_INPUT_LEFT),    //<
-		    l10n::getView(STRING_FOR_INPUT_RIGHT),   //<
-		    l10n::getView(STRING_FOR_INPUT_STEREO),  //<
 		};
-		options[9] = ((AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn)) //<
-		                 ? l10n::getView(STRING_FOR_INPUT_LEFT)
-		                 : l10n::getView(STRING_FOR_INPUT);
 
 		if (soundEditor.currentSound->getSynthMode() == SynthMode::RINGMOD) {
-			return {options.begin(), options.begin() + kNumOscTypesRingModdable};
+			return options;
 		}
+
+		options.emplace_back(l10n::getView(STRING_FOR_SAMPLE));
+
+		if (soundEditor.currentSourceIndex == 0) {
+		    options.emplace_back(l10n::getView(STRING_FOR_DX7));
+		}
+
 		if (AudioEngine::micPluggedIn || AudioEngine::lineInPluggedIn) {
-			return {options.begin(), options.begin() + kNumOscTypes};
+		    options.emplace_back(l10n::getView(STRING_FOR_INPUT_LEFT));
+		    options.emplace_back(l10n::getView(STRING_FOR_INPUT_RIGHT));
+		    options.emplace_back(l10n::getView(STRING_FOR_INPUT_STEREO));
+		} else {
+			options.emplace_back(l10n::getView(STRING_FOR_INPUT));
 		}
-		return {options.begin(), options.begin() + kNumOscTypes - 2};
+
+		return options;
 	}
 
 	bool isRelevant(ModControllableAudio* modControllable, int32_t whichThing) override {
