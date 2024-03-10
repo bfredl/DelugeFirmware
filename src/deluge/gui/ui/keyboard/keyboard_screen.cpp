@@ -655,6 +655,10 @@ void KeyboardScreen::openedInBackground() {
 	requestRendering(); // This one originally also included sidebar, the other ones didn't
 }
 
+void KeyboardScreen::checkNewInstrument(Instrument *newInstrument) {
+	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->checkNewInstrument(newInstrument);
+}
+
 bool KeyboardScreen::renderMainPads(uint32_t whichRows, RGB image[][kDisplayWidth + kSideBarWidth],
                                     uint8_t occupancyMask[][kDisplayWidth + kSideBarWidth], bool drawUndefinedArea) {
 	if (!image) {

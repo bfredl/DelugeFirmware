@@ -26,7 +26,7 @@ using namespace deluge::gui::ui::keyboard::layout;
 
 namespace deluge::gui::ui::keyboard::controls {
 
-static DxPatch *getCurrentPatch() {
+DxPatch *getCurrentDxPatch() {
 	auto *inst = getCurrentInstrument();
 	if (inst->type == OutputType::SYNTH) {
 		auto *sound = (SoundInstrument*)inst;
@@ -38,7 +38,7 @@ static DxPatch *getCurrentPatch() {
 }
 
 void DXColumn::renderColumn(RGB image[][kDisplayWidth + kSideBarWidth], int32_t column) {
-	DxPatch *patch = getCurrentPatch();
+	DxPatch *patch = getCurrentDxPatch();
 	if (!patch) {
 		return;
 	}
@@ -69,7 +69,7 @@ bool DXColumn::handleVerticalEncoder(int8_t pad, int32_t offset) {
 
 void DXColumn::handlePad(ModelStackWithTimelineCounter* modelStackWithTimelineCounter, PressedPad pad,
                           KeyboardLayout* layout) {
-	DxPatch *patch = getCurrentPatch();
+	DxPatch *patch = getCurrentDxPatch();
 	if (!patch) {
 		return;
 	}

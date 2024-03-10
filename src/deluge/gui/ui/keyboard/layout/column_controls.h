@@ -85,6 +85,8 @@ public:
 
 	virtual void renderSidebarPads(RGB image[][kDisplayWidth + kSideBarWidth]) override;
 
+	void checkNewInstrument(Instrument *newInstrument) override;
+
 	VelocityColumn velocityColumn{velocity};
 
 private:
@@ -98,6 +100,7 @@ private:
 
 	ColumnControlFunction leftColFunc = VELOCITY;
 	ColumnControlFunction rightColFunc = MOD;
+	bool rightColSetAtRuntime = false;
 	ControlColumn* leftColPrev = &velocityColumn;
 	ControlColumn* rightColPrev = &modColumn;
 	ControlColumn* leftCol = &velocityColumn;

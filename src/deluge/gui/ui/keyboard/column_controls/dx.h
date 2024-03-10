@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "dsp/dexed/dx7note.h"
 #include "gui/ui/keyboard/column_controls/control_column.h"
 
 namespace deluge::gui::ui::keyboard::controls {
@@ -33,5 +34,7 @@ public:
 private:
 
 };
+
+DxPatch *getCurrentDxPatch();
 
 } // namespace deluge::gui::ui::keyboard::controls
