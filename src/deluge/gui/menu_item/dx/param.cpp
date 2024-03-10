@@ -135,12 +135,20 @@ void DxParam::selectEncoderAction(int32_t offset) {
 
 void DxParam::horizontalEncoderAction(int32_t offset) {
 	if (Buttons::isShiftButtonPressed()) {
-		if (param > 6 * 21 + 8)
+		if (param < 0 || param > 6 * 21 || !patch)
 			return; // TODO: remember last OP param?
-		int newVal = param + 21 * offset;
-		if (newVal >= 0 and newVal < 6 * 21 + 8) {
-			param = newVal;
-		}
+		int cur_op = param/21;
+		int next_op = cur_op;
+		do {
+			next_op += offset;
+			if (next_op >= 6) {
+				next_op = 0;
+			} else if (next_op < 0) {
+				next_op = 5;
+			}
+		} while (!patch->opSwitch(next_op) && next_op != cur_op);
+
+		param = (param%21) + 21 * next_op;
 	}
 	else {
 		param = param + offset;
