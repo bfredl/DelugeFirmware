@@ -110,6 +110,9 @@ void DxParam::readValueAgain() {
 	if (param >= 6 * 21 && param < 6 * 21 + 11) {
 		y = 1;
 		x = param - 6 * 21;
+	} else if (param >= 6 * 21 + 11 && param < 6 * 21 + 11 + 7) {
+		y = 0;
+		x = param - 6 * 21 - 11;
 	}
 
 	drawValue();
@@ -215,6 +218,10 @@ bool DxParam::potentialShortcutPadAction(int32_t x, int32_t y, bool on) {
 	else if (y == 1) {
 		if (x < 11) {
 			found_param = 6 * 21 + x;
+		}
+	} else { // y == 0
+		if (x < 7) {
+			found_param = 6 * 21 + 11 + x;
 		}
 	}
 

@@ -38,16 +38,19 @@ to browse between parameters. Some parameters have a shortcut in a layer which i
 active when editing any DX7 parameter (otherwise the regular synth shortcuts apply)
 
 For the first 6 rows these are
+The seventh and eight row contains some of the global parameters
 
-TABELL
-
-The seventh row contains some of the global parameters
+| rate1 | 2 | 3 | 4| level1 | 2 | 3 | 4 | level | mode | coarse | fine | detune | velo |
+| -- | -- | -- | --| -- | --  | --  | --  | -- | -- | -- | -- | -- | -- |
+| rate1 | 2 | 3 | 4| level 1 | 2 | 3 | 4 | algo | feedback | sync | | | |
+| LFO rate | delay | pitch | amp | sync | shape | sens | detune |  | |  |  |  |  |
 
 TABELL
 
 If OLED screen is available a group of related parameters is displayed at a time, like all the envelope levels and rates
 for a specific envelope. With 7SEG the parameter name will be shown briefly before the value
 
+Press back/undo to exit the dx layer, and access the standard synth shortcuts again.
 
 ## Missing features:
 
