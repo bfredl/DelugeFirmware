@@ -58,7 +58,7 @@ public:
 
 	// in a child, call verticalEncoderHandledByColumns and ignore the encoder input if it returns
 	// true
-	virtual void handleVerticalEncoder(int32_t offset) override;
+	virtual void handleVerticalEncoder(int32_t offset, bool shiftEnabled) override;
 
 	// in a child, call horizontalEncoderHandledByColumns and ignore the encoder input if it returns
 	// true

@@ -2355,6 +2355,10 @@ void InstrumentClip::writeDataToFile(Serializer& writer, Song* song) {
 	writer.writeAttribute("inKeyScrollOffset", keyboardState.inKey.scrollOffset);
 	writer.writeAttribute("inKeyRowInterval", keyboardState.inKey.rowInterval);
 
+	writer.writeAttribute("microtonalScrollOffset", keyboardState.microtonal.scrollOffset);
+	writer.writeAttribute("microtonalRowInterval", keyboardState.microtonal.rowInterval);
+	writer.writeAttribute("microtonalColInterval", keyboardState.microtonal.colInterval);
+
 	writer.writeOpeningTagEnd();
 
 	Clip::writeMidiCommandsToFile(writer, song);
@@ -2568,6 +2572,18 @@ someError:
 
 		else if (!strcmp(tagName, "inKeyRowInterval")) {
 			keyboardState.inKey.rowInterval = reader.readTagOrAttributeValueInt();
+		}
+
+		else if (!strcmp(tagName, "microtonalScrollOffset")) {
+			keyboardState.microtonal.scrollOffset = reader.readTagOrAttributeValueInt();
+		}
+
+		else if (!strcmp(tagName, "microtonalRowInterval")) {
+			keyboardState.microtonal.rowInterval = reader.readTagOrAttributeValueInt();
+		}
+
+		else if (!strcmp(tagName, "microtonalColInterval")) {
+			keyboardState.microtonal.colInterval = reader.readTagOrAttributeValueInt();
 		}
 
 		else if (!strcmp(tagName, "crossScreenEditLevel")) {

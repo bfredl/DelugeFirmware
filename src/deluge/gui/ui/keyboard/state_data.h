@@ -28,6 +28,12 @@ struct KeyboardStateIsomorphic {
 	int32_t rowInterval = kDefaultIsometricRowInterval;
 };
 
+struct KeyboardStateMicrotonal {
+	int32_t scrollOffset = (60 - (kDisplayHeight >> 2) * kDefaultIsometricRowInterval);
+	int32_t rowInterval = kDefaultIsometricRowInterval;
+	int32_t colInterval = 1;
+};
+
 struct KeyboardStateDrums {
 	int32_t scrollOffset = 0;
 	int32_t edgeSize = 4;
@@ -48,6 +54,7 @@ struct KeyboardState {
 	KeyboardStateIsomorphic isomorphic;
 	KeyboardStateDrums drums;
 	KeyboardStateInKey inKey;
+	KeyboardStateMicrotonal microtonal;
 
 	layout::ColumnControlState columnControl;
 };

@@ -37,7 +37,7 @@ void KeyboardLayoutInKey::evaluatePads(PressedPad presses[kMaxNumKeyboardPadPres
 	ColumnControlsKeyboard::evaluatePads(presses);
 }
 
-void KeyboardLayoutInKey::handleVerticalEncoder(int32_t offset) {
+void KeyboardLayoutInKey::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
 	if (verticalEncoderHandledByColumns(offset)) {
 		return;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016-2023 Synthstrom Audible Limited
+ * Copyright © 2016-2024 Synthstrom Audible Limited
  *
  * This file is part of The Synthstrom Audible Deluge Firmware.
  *
@@ -17,17 +17,14 @@
 
 #pragma once
 
-#include "gui/ui/keyboard/layout.h"
+#include "gui/ui/keyboard/layout/column_controls.h"
 
 namespace deluge::gui::ui::keyboard::layout {
 
-constexpr int32_t kMinNornsRowInterval = 1;
-constexpr int32_t kMaxNornsRowInterval = 16;
-
-class KeyboardLayoutNorns : public KeyboardLayout {
+class KeyboardLayoutMicrotonal : public ColumnControlsKeyboard {
 public:
-	KeyboardLayoutNorns() = default;
-	~KeyboardLayoutNorns() override = default;
+	KeyboardLayoutMicrotonal() {}
+	~KeyboardLayoutMicrotonal() override {}
 
 	void evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) override;
 	void handleVerticalEncoder(int32_t offset, bool shiftEnabled) override;
@@ -36,12 +33,19 @@ public:
 
 	void renderPads(RGB image[][kDisplayWidth + kSideBarWidth]) override;
 
-	char const* name() override { return "Norns"; }
+	char const* name() override { return "Microtonal"; }
 	bool supportsInstrument() override { return true; }
 	bool supportsKit() override { return false; }
 
+	bool drawNoteCode(int32_t noteCode) override;
+
 private:
-	inline uint8_t noteFromCoords(int32_t x, int32_t y) { return x + y * kDisplayWidth; }
+	void offsetPads(int32_t offset, bool shiftEnabled);
+	inline uint8_t noteFromCoords(int32_t x, int32_t y) {
+		return getState().microtonal.scrollOffset + x  * getState().microtonal.colInterval + y * getState().microtonal.rowInterval;
+	}
+
+	RGB noteColours[kDisplayHeight * kMaxIsomorphicRowInterval + kDisplayWidth];
 };
 
 }; // namespace deluge::gui::ui::keyboard::layout

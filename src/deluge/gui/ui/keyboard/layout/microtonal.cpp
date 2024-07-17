@@ -15,7 +15,7 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gui/ui/keyboard/layout/isomorphic.h"
+#include "gui/ui/keyboard/layout/microtonal.h"
 #include "gui/ui/audio_recorder.h"
 #include "gui/ui/browser/sample_browser.h"
 #include "gui/ui/sound_editor.h"
@@ -26,7 +26,7 @@
 
 namespace deluge::gui::ui::keyboard::layout {
 
-void KeyboardLayoutIsomorphic::evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) {
+void KeyboardLayoutMicrotonal::evaluatePads(PressedPad presses[kMaxNumKeyboardPadPresses]) {
 	currentNotesState = NotesState{}; // Erase active notes
 
 	for (int32_t idxPress = 0; idxPress < kMaxNumKeyboardPadPresses; ++idxPress) {
@@ -40,22 +40,35 @@ void KeyboardLayoutIsomorphic::evaluatePads(PressedPad presses[kMaxNumKeyboardPa
 	ColumnControlsKeyboard::evaluatePads(presses);
 }
 
-void KeyboardLayoutIsomorphic::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
+void KeyboardLayoutMicrotonal::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
 	if (verticalEncoderHandledByColumns(offset)) {
 		return;
 	}
-	offsetPads(offset * getState().isomorphic.rowInterval, false);
+	if (shiftEnabled) {
+		KeyboardStateMicrotonal& state = getState().microtonal;
+		state.colInterval += offset;
+		state.colInterval = std::clamp(state.colInterval, kMinIsomorphicRowInterval, kMaxIsomorphicRowInterval);
+
+		char buffer[13] = "Col step:   ";
+		auto displayOffset = (display->haveOLED() ? 10 : 0);
+		intToString(state.colInterval, buffer + displayOffset, 1);
+		display->displayPopup(buffer);
+
+		offset = 0; // Reset offset variable for processing scroll calculation without actually shifting
+	}
+
+	offsetPads(offset * getState().microtonal.rowInterval, false);
 }
 
-void KeyboardLayoutIsomorphic::handleHorizontalEncoder(int32_t offset, bool shiftEnabled) {
+void KeyboardLayoutMicrotonal::handleHorizontalEncoder(int32_t offset, bool shiftEnabled) {
 	if (horizontalEncoderHandledByColumns(offset, shiftEnabled)) {
 		return;
 	}
 	offsetPads(offset, shiftEnabled);
 }
 
-void KeyboardLayoutIsomorphic::offsetPads(int32_t offset, bool shiftEnabled) {
-	KeyboardStateIsomorphic& state = getState().isomorphic;
+void KeyboardLayoutMicrotonal::offsetPads(int32_t offset, bool shiftEnabled) {
+	KeyboardStateMicrotonal& state = getState().microtonal;
 
 	if (shiftEnabled) {
 		state.rowInterval += offset;
@@ -85,8 +98,8 @@ void KeyboardLayoutIsomorphic::offsetPads(int32_t offset, bool shiftEnabled) {
 	precalculate();
 }
 
-void KeyboardLayoutIsomorphic::precalculate() {
-	KeyboardStateIsomorphic& state = getState().isomorphic;
+void KeyboardLayoutMicrotonal::precalculate() {
+	KeyboardStateMicrotonal& state = getState().microtonal;
 
 	// Pre-Buffer colours for next renderings
 	for (int32_t i = 0; i < (kDisplayHeight * state.rowInterval + kDisplayWidth); ++i) {
@@ -94,43 +107,52 @@ void KeyboardLayoutIsomorphic::precalculate() {
 	}
 }
 
-void KeyboardLayoutIsomorphic::renderPads(RGB image[][kDisplayWidth + kSideBarWidth]) {
-	// Precreate list of all active notes per octave
-	bool octaveActiveNotes[kOctaveSize] = {0};
-	for (uint8_t idx = 0; idx < currentNotesState.count; ++idx) {
-		octaveActiveNotes[((currentNotesState.notes[idx].note + kOctaveSize) - getRootNote()) % kOctaveSize] = true;
-	}
-
-	// Precreate list of all scale notes per octave
-	NoteSet octaveScaleNotes;
+void KeyboardLayoutMicrotonal::renderPads(RGB image[][kDisplayWidth + kSideBarWidth]) {
+	const int kMaxOctaveSize = 50;
+	int octave_size = 31;
+	int8_t octaveScaleNotes[kMaxOctaveSize] = {0};
+	int8_t baseNotes[] = {0, 5, 10, 13, 18, 23, 28};
 	if (getScaleModeEnabled()) {
-		NoteSet& scaleNotes = getScaleNotes();
-		for (uint8_t idx = 0; idx < getScaleNoteCount(); ++idx) {
-			octaveScaleNotes.add(scaleNotes[idx]);
+		for (auto note : baseNotes) {
+			octaveScaleNotes[note] = 1;
+			octaveScaleNotes[note+2] = 2;
+			octaveScaleNotes[(note+29)%31] = 3;
 		}
 	}
+
+	RGB scaleColours[4] { colours::black, colours::green, colours::blue, colours::red};
+
+	// Precreate list of all active notes per octave
+	bool octaveActiveNotes[kMaxOctaveSize] = {0};
+	for (uint8_t idx = 0; idx < currentNotesState.count; ++idx) {
+		octaveActiveNotes[((currentNotesState.notes[idx].note + octave_size) - getRootNote()) % octave_size] = true;
+	}
+
 
 	// Iterate over grid image
 	for (int32_t y = 0; y < kDisplayHeight; ++y) {
 		int32_t noteCode = noteFromCoords(0, y);
-		int32_t normalizedPadOffset = noteCode - getState().isomorphic.scrollOffset;
-		int32_t noteWithinOctave = (uint16_t)((noteCode + kOctaveSize) - getRootNote()) % kOctaveSize;
+		int32_t normalizedPadOffset = noteCode - getState().microtonal.scrollOffset;
+		int32_t noteWithinOctave = (uint16_t)((noteCode + octave_size) - getRootNote()) % octave_size;
+		int32_t colInterval = getState().microtonal.colInterval;
 
 		for (int32_t x = 0; x < kDisplayWidth; x++) {
+
+			RGB base = scaleColours[octaveScaleNotes[noteWithinOctave]];
 			// Full colour for every octaves root and active notes
 			if (octaveActiveNotes[noteWithinOctave] || noteWithinOctave == 0) {
-				image[y][x] = noteColours[normalizedPadOffset];
+				image[y][x] = base;
 			}
 			// If highlighting notes is active, do it
 			else if (runtimeFeatureSettings.get(RuntimeFeatureSettingType::HighlightIncomingNotes)
 			             == RuntimeFeatureStateToggle::On
 			         && getHighlightedNotes()[noteCode] != 0) {
-				image[y][x] = noteColours[normalizedPadOffset].adjust(getHighlightedNotes()[noteCode], 1);
+				image[y][x] = base.adjust(getHighlightedNotes()[noteCode], 1);
 			}
 
 			// Or, if this note is just within the current scale, show it dim
-			else if (octaveScaleNotes.has(noteWithinOctave)) {
-				image[y][x] = noteColours[normalizedPadOffset].forTail();
+			else if (octaveScaleNotes[noteWithinOctave]) {
+				image[y][x] = base.forTail();
 			}
 
 			// turn off other pads
@@ -150,11 +172,33 @@ void KeyboardLayoutIsomorphic::renderPads(RGB image[][kDisplayWidth + kSideBarWi
 				}
 			}
 
-			++noteCode;
+			noteCode += colInterval;
 			++normalizedPadOffset;
-			noteWithinOctave = (noteWithinOctave + 1) % kOctaveSize;
+			noteWithinOctave = (noteWithinOctave + colInterval) % octave_size;
 		}
 	}
+}
+
+bool KeyboardLayoutMicrotonal::drawNoteCode(int32_t noteCode) {
+	int notenum = noteCode % 31;
+	int octave = noteCode / 31;
+	int notevals[] = {0, 5, 10, 13, 18, 23, 28};
+	char notenames[] = {'C', 'D', 'E', 'F', 'G', 'A', 'B'};
+	int baseval = 0;
+	int delta = 0;
+	for (int note: notevals) {
+		delta = notenum-note;
+		if (-2 <= delta && delta <= 2) {
+			break;
+		}
+		baseval++;
+	}
+
+	char deltaname[] = {'b', '\\', ' ', '|', '#'};
+	char notestr[4] = {notenames[baseval], deltaname[delta+2], (char)('0'+octave), 0};
+
+	display->popupTextTemporary(notestr);
+	return true;
 }
 
 } // namespace deluge::gui::ui::keyboard::layout

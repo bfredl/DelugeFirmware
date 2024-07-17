@@ -107,7 +107,7 @@ void ColumnControlsKeyboard::evaluatePads(PressedPad presses[kMaxNumKeyboardPadP
 	}
 }
 
-void ColumnControlsKeyboard::handleVerticalEncoder(int32_t offset) {
+void ColumnControlsKeyboard::handleVerticalEncoder(int32_t offset, bool shiftEnabled) {
 	verticalEncoderHandledByColumns(offset);
 }
 

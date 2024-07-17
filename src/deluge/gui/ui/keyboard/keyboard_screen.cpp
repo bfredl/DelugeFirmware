@@ -46,6 +46,7 @@
 #include "gui/ui/keyboard/layout/in_key.h"
 #include "gui/ui/keyboard/layout/isomorphic.h"
 #include "gui/ui/keyboard/layout/norns.h"
+#include "gui/ui/keyboard/layout/microtonal.h"
 #include "gui/ui/keyboard/layout/velocity_drums.h"
 
 deluge::gui::ui::keyboard::KeyboardScreen keyboardScreen{};
@@ -56,6 +57,7 @@ layout::KeyboardLayoutIsomorphic keyboardLayoutIsomorphic{};
 layout::KeyboardLayoutVelocityDrums keyboardLayoutVelocityDrums{};
 layout::KeyboardLayoutInKey keyboardLayoutInKey{};
 layout::KeyboardLayoutNorns keyboardLayoutNorns{};
+layout::KeyboardLayoutMicrotonal keyboardLayoutMicrotonal{};
 KeyboardLayout* layoutList[KeyboardLayoutType::KeyboardLayoutTypeMaxElement + 1] = {0};
 
 KeyboardScreen::KeyboardScreen() {
@@ -63,6 +65,7 @@ KeyboardScreen::KeyboardScreen() {
 	layoutList[KeyboardLayoutType::KeyboardLayoutTypeDrums] = (KeyboardLayout*)&keyboardLayoutVelocityDrums;
 	layoutList[KeyboardLayoutType::KeyboardLayoutTypeInKey] = (KeyboardLayout*)&keyboardLayoutInKey;
 	layoutList[KeyboardLayoutType::KeyboardLayoutTypeNorns] = (KeyboardLayout*)&keyboardLayoutNorns;
+	layoutList[KeyboardLayoutType::KeyboardLayoutTypeMicrotonal] = (KeyboardLayout*)&keyboardLayoutMicrotonal;
 
 	memset(&pressedPads, 0, sizeof(pressedPads));
 	currentNotesState = {0};
@@ -578,12 +581,12 @@ ActionResult KeyboardScreen::verticalEncoderAction(int32_t offset, bool inCardRo
 		return ActionResult::REMIND_ME_OUTSIDE_CARD_ROUTINE; // Allow sometimes.
 	}
 
-	if (Buttons::isShiftButtonPressed() && currentUIMode == UI_MODE_NONE) {
+	if (false && Buttons::isShiftButtonPressed() && currentUIMode == UI_MODE_NONE) {
 		getCurrentInstrumentClip()->colourOffset += offset;
 		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
 	}
 	else {
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleVerticalEncoder(offset);
+		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleVerticalEncoder(offset, (Buttons::isShiftButtonPressed() && isUIModeWithinRange(padActionUIModes)));
 		if (isUIModeWithinRange(padActionUIModes)) {
 			evaluateActiveNotes();
 			updateActiveNotes();
@@ -832,7 +835,9 @@ void KeyboardScreen::drawNoteCode(int32_t noteCode) {
 	}
 
 	if (getCurrentOutputType() != OutputType::KIT) {
-		drawActualNoteCode(noteCode);
+		if (!layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->drawNoteCode(noteCode)) {
+			drawActualNoteCode(noteCode);
+		}
 	}
 }
 
