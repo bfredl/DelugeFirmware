@@ -123,6 +123,7 @@ struct TaskManager {
 	double cpuTime{0};
 	double overhead{0};
 	double lastPrintedStats{0};
+	uint32_t numYields{0};
 	void start(double duration = 0);
 	void removeTask(TaskID id);
 	void runTask(TaskID id);
@@ -152,6 +153,11 @@ private:
 	void resetStats();
 	bool countThisTask{true};
 	void startClock();
+
+	uint32_t cx, cy, cz;
+	uint32_t cga, cgb, cgc, cgd;
+	uint32_t cgx, cgy;
+	uint32_t cg0, cg11;
 };
 
 TaskManager taskManager;
@@ -180,6 +186,9 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 	uint8_t bestPriority = INT8_MAX;
 	/// Go through all tasks. If a task needs to be called before the current best task finishes, and has a higher
 	/// priority than the current best task, it becomes the best task
+	bool borked_out = false;
+	bool any_borked_out = false;
+	cg0++;
 
 	for (int i = 0; i < numActiveTasks; i++) {
 		struct Task* t = &list[sortedList[i].task];
@@ -189,6 +198,7 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 		double timeSinceFinish = currentTime - t->lastFinishTime;
 		// ensure every routine is within its target
 		if (currentTime - t->lastCallTime > s->maxInterval) {
+			cga++;
 			return sortedList[i].task;
 		}
 		if (timeToCall < currentTime || maxTimeToCall < nextFinishTime) {
@@ -196,12 +206,18 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 
 				if (s->priority < bestPriority && t->handle) {
 					if (timeSinceFinish > s->backOffPeriod) {
+						borked_out = false;
 						bestTask = sortedList[i].task;
 						nextFinishTime = currentTime + t->durationStats.average;
 					}
 					else {
 						bestTask = -1;
 						nextFinishTime = maxTimeToCall;
+						borked_out = true;
+						if (!any_borked_out) {
+							any_borked_out = true;
+							cg11++;
+						}
 					}
 					bestPriority = s->priority;
 				}
@@ -211,6 +227,9 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 	// if we didn't find a task because something high priority needs to wait to run, find the next task we can do
 	// before it needs to start
 	if (bestTask == -1) {
+		if (borked_out) {
+			cgb++;
+		}
 		// first look based on target time
 		for (int i = (numActiveTasks - 1); i >= 0; i--) {
 			struct Task* t = &list[sortedList[i].task];
@@ -218,6 +237,7 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 			if (currentTime + t->durationStats.average < nextFinishTime
 			    && currentTime - t->lastFinishTime > s->targetInterval
 			    && currentTime - t->lastFinishTime > s->backOffPeriod) {
+				cgx++;
 				return sortedList[i].task;
 			}
 		}
@@ -227,9 +247,16 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 			struct TaskSchedule* s = &t->schedule;
 			if (currentTime + t->durationStats.average < nextFinishTime
 			    && currentTime - t->lastFinishTime > s->backOffPeriod) {
+				cgy++;
 				return sortedList[i].task;
 			}
 		}
+		if (borked_out) {
+			cgc++;
+		}
+
+	} else {
+		cgd++;
 	}
 	return bestTask;
 }
@@ -344,6 +371,7 @@ bool TaskManager::yield(RunCondition until, double timeout) {
 	auto timeNow = getSecondsFromStart();
 	double runtime = (timeNow - yieldingTask->lastCallTime);
 	bool skipTimeout = timeout < 1 / 10000.;
+	numYields++;
 
 	// for now we first end this as if the task finished - might be advantageous to replace with a context switch later
 	if (yieldingTask->removeAfterUse) {
@@ -393,9 +421,11 @@ void TaskManager::start(double duration) {
 		TaskID task = chooseBestTask(mustEndBefore);
 		if (task >= 0) {
 			runTask(task);
+			cx++;
 		}
 		else {
 			bool addedTask = checkConditionalTasks();
+			if (addedTask) cy++; else cz++;
 			// if we sorted our list then we should get back to running things and not print stats
 			if (!addedTask && newTime > lastPrintedStats + 10) {
 				lastPrintedStats = newTime;
@@ -445,7 +475,14 @@ void TaskManager::resetStats() {
 	}
 	cpuTime = 0;
 	overhead = 0;
+	numYields = 0;
+	cx = cy = cz = 0;
+	cg0 = cg11 = 0;
+	cga = cgb = cgc = cgd =  0;
+	cgx = cgy = 0;
 }
+
+uint32_t audio_sample_time();
 
 void TaskManager::printStats() {
 	D_PRINTLN("Dumping task manager stats: (min/ average/ max)");
@@ -470,13 +507,18 @@ void TaskManager::printStats() {
 			D_PRINTLN("Load: %5.2f "                  //<
 			          "Average Duration: %9.3f "      //<
 			          "Times Called: %10d, Task: %s", //<
-			          100.0 * task.totalTime / cpuTime, durationScale * task.durationStats.average, task.timesCalled,
+			          10.0 * task.totalTime, durationScale * task.durationStats.average, task.timesCalled,
 			          task.name);
 #endif
 		}
 	}
 	D_PRINTLN("Working time: %5.2f, Overhead: %5.2f. Total running time: %5.2f seconds", 10 * cpuTime, 10 * overhead,
 	          runningTime);
+	D_PRINTLN("audio sample time: %5.2f seconds, %d yields", audio_sample_time()/44100., numYields);
+	D_PRINTLN("cx %u, cy %u, cz %u", cx, cy, cz);
+	D_PRINTLN("ENTER %u, BORK %u", cg0, cg11);
+	D_PRINTLN("a %u, b %u, c %u, d %u", cga, cgb, cgc, cgd);
+	D_PRINTLN("gx %u, gy %u", cgx, cgy);
 	resetStats();
 }
 /// return a monotonic timer value in seconds from when the task manager started
@@ -484,6 +526,7 @@ double TaskManager::getSecondsFromStart() {
 	auto timeNow = getTimerValueSeconds(0);
 	if (timeNow < lastTime) {
 		runningTime += rollTime;
+		D_PRINTLN("ROLLOVER");
 	}
 	runningTime += timeNow - lastTime;
 	lastTime = timeNow;

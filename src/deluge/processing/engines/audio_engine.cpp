@@ -103,6 +103,10 @@ extern int32_t spareRenderingBuffer[][SSI_TX_BUFFER_NUM_SAMPLES];
 int32_t usageTimes[REPORT_AVERAGE_NUM];
 #endif
 
+uint32_t audio_sample_time() {
+	return AudioEngine::audioSampleTimer;
+}
+
 extern "C" uint32_t getAudioSampleTimerMS() {
 	return AudioEngine::audioSampleTimer / 44.1;
 }
