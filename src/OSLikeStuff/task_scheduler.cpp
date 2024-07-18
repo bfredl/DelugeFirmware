@@ -138,6 +138,7 @@ struct TaskManager {
 	bool checkConditionalTasks();
 	bool yield(RunCondition until, double timeout = 0);
 	double getSecondsFromStart();
+	void setRunnable(TaskID id, bool runnable);
 
 	void ignoreForStats();
 	void setNextRunTimeforCurrentTask(double seconds);
@@ -159,7 +160,7 @@ TaskManager taskManager;
 void TaskManager::createSortedList() {
 	int j = 0;
 	for (TaskID i = 0; i < kMaxTasks; i++) {
-		if (list[i].handle != nullptr && list[i].runnable) {
+		if (list[i].handle != nullptr && (list[i].runnable || list[i].condition == nullptr)) {
 			sortedList[j] = (SortedTask{list[i].schedule.priority, i});
 			j++;
 		}
@@ -184,6 +185,9 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 
 	for (int i = 0; i < numActiveTasks; i++) {
 		struct Task* t = &list[sortedList[i].task];
+		if (!t->runnable) {
+			continue;
+		}
 		struct TaskSchedule* s = &t->schedule;
 		double timeToCall = t->lastCallTime + s->targetInterval - t->durationStats.average;
 		double maxTimeToCall = t->lastCallTime + s->maxInterval - t->durationStats.average;
@@ -216,7 +220,7 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 		for (int i = (numActiveTasks - 1); i >= 0; i--) {
 			struct Task* t = &list[sortedList[i].task];
 			struct TaskSchedule* s = &t->schedule;
-			if (currentTime + t->durationStats.average < nextFinishTime
+			if (t->runnable && currentTime + t->durationStats.average < nextFinishTime
 			    && currentTime - t->lastFinishTime > s->targetInterval
 			    && currentTime - t->lastFinishTime > s->backOffPeriod) {
 				return sortedList[i].task;
@@ -226,7 +230,7 @@ TaskID TaskManager::chooseBestTask(double deadline) {
 		for (int i = (numActiveTasks - 1); i >= 0; i--) {
 			struct Task* t = &list[sortedList[i].task];
 			struct TaskSchedule* s = &t->schedule;
-			if (currentTime + t->durationStats.average < nextFinishTime
+			if (t->runnable && currentTime + t->durationStats.average < nextFinishTime
 			    && currentTime - t->lastFinishTime > s->backOffPeriod) {
 				return sortedList[i].task;
 			}
@@ -288,6 +292,10 @@ void TaskManager::removeTask(TaskID id) {
 }
 void TaskManager::ignoreForStats() {
 	countThisTask = false;
+}
+
+void TaskManager::setRunnable(TaskID id, bool runnable) {
+	list[id].runnable = runnable;
 }
 
 double TaskManager::getLastRunTimeforCurrentTask() {
@@ -534,6 +542,10 @@ bool yieldWithTimeout(RunCondition until, double timeout) {
 void removeTask(TaskID id) {
 	return taskManager.removeTask(id);
 }
+void taskSetRunnable(TaskID id, bool runnable) {
+	taskManager.setRunnable(id, runnable);
+}
+
 double getSystemTime() {
 	return taskManager.getSecondsFromStart();
 }

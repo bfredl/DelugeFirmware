@@ -17,6 +17,7 @@
 
 #include "storage/audio/audio_file_manager.h"
 #include "definitions_cxx.hpp"
+#include "deluge.h"
 #include "extern.h"
 #include "gui/l10n/l10n.h"
 #include "gui/ui/ui.h"
@@ -34,6 +35,7 @@
 #include "storage/storage_manager.h"
 #include "storage/wave_table/wave_table.h"
 #include "storage/wave_table/wave_table_reader.h"
+#include "task_scheduler.h"
 #include <new>
 #include <string.h>
 
@@ -1324,6 +1326,7 @@ performActionsAndGetOut:
 
 		Cluster* cluster = loadingQueue.grabHead();
 		if (!cluster) {
+			taskSetRunnable(clusterTask, false);
 			break;
 		}
 
@@ -1377,6 +1380,7 @@ performActionsAndGetOut:
 // Currently there's no risk of trying to enqueue a cluster multiple times, because this function only gets called
 // after it's freshly allocated
 Error AudioFileManager::enqueueCluster(Cluster* cluster, uint32_t priorityRating) {
+	taskSetRunnable(clusterTask, true);
 	return loadingQueue.add(cluster, priorityRating);
 }
 
