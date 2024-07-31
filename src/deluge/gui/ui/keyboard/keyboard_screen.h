@@ -51,6 +51,7 @@ public:
 	void flashDefaultRootNote();
 	void openedInBackground();
 	void exitAuditionMode();
+	void stepRecordAdvance();
 
 	uint8_t highlightedNotes[kHighestKeyboardNote] = {0};
 	uint8_t nornsNotes[kHighestKeyboardNote] = {0};
