@@ -97,6 +97,9 @@ public:
 	                  int16_t const* mpeValuesOrNull = nullptr, int32_t fromMIDIChannel = MIDI_CHANNEL_NONE);
 	void recordNoteOff(ModelStackWithNoteRow* modelStack, int32_t velocity = kDefaultLiftValue);
 
+	bool stepRecordNoteOn(ModelStackWithNoteRow* modelStack, int32_t velocity, int32_t xZoom);
+	void stepRecordAdvance(int32_t xZoom);
+
 	void copyBasicsFrom(Clip const* otherClip) override;
 
 	ArpeggiatorSettings arpSettings;
@@ -140,6 +143,10 @@ public:
 	void lengthChanged(ModelStackWithTimelineCounter* modelStack, int32_t oldLength, Action* action = nullptr) override;
 	NoteRow* createNewNoteRowForKit(ModelStackWithTimelineCounter* modelStack, bool atStart,
 	                                int32_t* getIndex = nullptr);
+	bool isStepRecording = false;
+	int32_t stepRecordingPos = 0;
+	void toggleStepRecording();
+
 	Error changeInstrument(ModelStackWithTimelineCounter* modelStack, Instrument* newInstrument,
 	                       ParamManagerForTimeline* paramManager, InstrumentRemoval instrumentRemovalInstruction,
 	                       InstrumentClip* favourClipForCloningParamManager = nullptr,
