@@ -58,6 +58,8 @@ layout::KeyboardLayoutInKey keyboardLayoutInKey{};
 layout::KeyboardLayoutNorns keyboardLayoutNorns{};
 KeyboardLayout* layoutList[KeyboardLayoutType::KeyboardLayoutTypeMaxElement + 1] = {0};
 
+KeyboardLayout *currentLayout() {return layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout];}
+
 KeyboardScreen::KeyboardScreen() {
 	layoutList[KeyboardLayoutType::KeyboardLayoutTypeIsomorphic] = (KeyboardLayout*)&keyboardLayoutIsomorphic;
 	layoutList[KeyboardLayoutType::KeyboardLayoutTypeDrums] = (KeyboardLayout*)&keyboardLayoutVelocityDrums;
@@ -184,8 +186,8 @@ ActionResult KeyboardScreen::padAction(int32_t x, int32_t y, int32_t velocity) {
 
 void KeyboardScreen::evaluateActiveNotes() {
 	lastNotesState = currentNotesState;
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->evaluatePads(pressedPads);
-	currentNotesState = layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->getNotesState();
+	currentLayout()->evaluatePads(pressedPads);
+	currentNotesState = currentLayout()->getNotesState();
 }
 
 void KeyboardScreen::updateActiveNotes() {
@@ -555,7 +557,7 @@ ActionResult KeyboardScreen::buttonAction(deluge::hid::Button b, bool on, bool i
 	         && currentUIMode == UI_MODE_SCALE_MODE_BUTTON_PRESSED) {
 		exitScaleModeOnButtonRelease = false;
 		cycleThroughScales();
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+		currentLayout()->precalculate();
 		requestRendering();
 	}
 
@@ -580,10 +582,10 @@ ActionResult KeyboardScreen::verticalEncoderAction(int32_t offset, bool inCardRo
 
 	if (Buttons::isShiftButtonPressed() && currentUIMode == UI_MODE_NONE) {
 		getCurrentInstrumentClip()->colourOffset += offset;
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+		currentLayout()->precalculate();
 	}
 	else {
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleVerticalEncoder(offset);
+		currentLayout()->handleVerticalEncoder(offset);
 		if (isUIModeWithinRange(padActionUIModes)) {
 			evaluateActiveNotes();
 			updateActiveNotes();
@@ -596,7 +598,7 @@ ActionResult KeyboardScreen::verticalEncoderAction(int32_t offset, bool inCardRo
 
 ActionResult KeyboardScreen::horizontalEncoderAction(int32_t offset) {
 
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleHorizontalEncoder(
+	currentLayout()->handleHorizontalEncoder(
 	    offset, (Buttons::isShiftButtonPressed() && isUIModeWithinRange(padActionUIModes)));
 
 	if (isUIModeWithinRange(padActionUIModes)) {
@@ -650,7 +652,7 @@ void KeyboardScreen::selectLayout(int8_t offset) {
 	// Ensure scale mode is as expected
 	if (getCurrentOutputType() != OutputType::KIT) {
 		auto requiredScaleMode =
-		    layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->requiredScaleMode();
+		    currentLayout()->requiredScaleMode();
 		if (requiredScaleMode == RequiredScaleMode::Enabled && !getCurrentInstrumentClip()->inScaleMode) {
 			getCurrentInstrumentClip()->yScroll =
 			    instrumentClipView.setupForEnteringScaleMode(currentSong->key.rootNote);
@@ -664,10 +666,10 @@ void KeyboardScreen::selectLayout(int8_t offset) {
 	}
 
 	// Ensure scroll values are calculated in bounds
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleHorizontalEncoder(0, false);
+	currentLayout()->handleHorizontalEncoder(0, false);
 
 	// Precalculate because changing instruments can change pad colours
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+	currentLayout()->precalculate();
 	requestRendering();
 }
 
@@ -690,15 +692,15 @@ void KeyboardScreen::selectEncoderAction(int8_t offset) {
 			}
 		}
 		display->displayPopup(noteName, 3, false, (noteCodeIsSharp[newRootNote] ? 0 : 255));
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleHorizontalEncoder(0, false);
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+		currentLayout()->handleHorizontalEncoder(0, false);
+		currentLayout()->precalculate();
 		requestRendering();
 	}
 	else {
 		InstrumentClipMinder::selectEncoderAction(offset);
 		// Ensure scroll values are calculated in bounds
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleHorizontalEncoder(0, false);
-		layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+		currentLayout()->handleHorizontalEncoder(0, false);
+		currentLayout()->precalculate();
 		requestRendering();
 	}
 }
@@ -736,13 +738,13 @@ void KeyboardScreen::openedInBackground() {
 	getCurrentInstrumentClip()->onKeyboardScreen = true;
 
 	// Ensure scroll values are calculated in bounds
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->handleHorizontalEncoder(0, false);
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->precalculate();
+	currentLayout()->handleHorizontalEncoder(0, false);
+	currentLayout()->precalculate();
 	requestRendering(); // This one originally also included sidebar, the other ones didn't
 }
 
 void KeyboardScreen::checkNewInstrument(Instrument* newInstrument) {
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->checkNewInstrument(newInstrument);
+	currentLayout()->checkNewInstrument(newInstrument);
 }
 
 bool KeyboardScreen::renderMainPads(uint32_t whichRows, RGB image[][kDisplayWidth + kSideBarWidth],
@@ -760,7 +762,7 @@ bool KeyboardScreen::renderMainPads(uint32_t whichRows, RGB image[][kDisplayWidt
 	// We assume the whole screen is occupied
 	memset(occupancyMask, 64, sizeof(uint8_t) * kDisplayHeight * (kDisplayWidth + kSideBarWidth));
 
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->renderPads(image);
+	currentLayout()->renderPads(image);
 
 	PadLEDs::renderingLock = false;
 
@@ -777,7 +779,7 @@ bool KeyboardScreen::renderSidebar(uint32_t whichRows, RGB image[][kDisplayWidth
 		return true;
 	}
 
-	layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->renderSidebarPads(image);
+	currentLayout()->renderSidebarPads(image);
 
 	return true;
 }
@@ -789,7 +791,7 @@ void KeyboardScreen::flashDefaultRootNote() {
 }
 
 void KeyboardScreen::enterScaleMode(int32_t selectedRootNote) {
-	auto requiredScaleMode = layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->requiredScaleMode();
+	auto requiredScaleMode = currentLayout()->requiredScaleMode();
 	if (requiredScaleMode == RequiredScaleMode::Disabled) {
 		return;
 	}
@@ -806,7 +808,7 @@ void KeyboardScreen::enterScaleMode(int32_t selectedRootNote) {
 }
 
 void KeyboardScreen::exitScaleMode() {
-	auto requiredScaleMode = layoutList[getCurrentInstrumentClip()->keyboardState.currentLayout]->requiredScaleMode();
+	auto requiredScaleMode = currentLayout()->requiredScaleMode();
 	if (requiredScaleMode == RequiredScaleMode::Enabled) {
 		return;
 	}
