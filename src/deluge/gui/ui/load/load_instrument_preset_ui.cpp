@@ -19,6 +19,7 @@
 #include "definitions_cxx.hpp"
 #include "extern.h"
 #include "gui/context_menu/load_instrument_preset.h"
+#include "gui/menu_item/dx/cartridge.h"
 #include "gui/ui/keyboard/keyboard_screen.h"
 #include "gui/ui/root_ui.h"
 #include "gui/views/arranger_view.h"
@@ -38,6 +39,8 @@
 #include "model/instrument/midi_instrument.h"
 #include "model/song/song.h"
 #include "processing/engines/audio_engine.h"
+#include "processing/sound/sound_instrument.h"
+#include "storage/DX7Cartridge.h"
 #include "storage/audio/audio_file_manager.h"
 #include "storage/file_item.h"
 #include "storage/storage_manager.h"
@@ -300,6 +303,17 @@ void LoadInstrumentPresetUI::currentFileChanged(int32_t movementDirection) {
 	//}
 }
 
+static Error getRawFilePath(String* path, FileItem *item) {
+	path->set(&Browser::currentDir);
+
+	Error error = path->concatenate("/");
+	if (error != Error::NONE) {
+		return error;
+	}
+
+return  path->concatenate(&item->filename);
+}
+
 void LoadInstrumentPresetUI::enterKeyPress() {
 
 	FileItem* currentFileItem = getCurrentFileItem();
@@ -319,8 +333,46 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		}
 	}
 	else if (isSYXFile(currentFileItem)) {
-			display->displayPopup("ITS SYX TIME!");
+		String path;
+		getRawFilePath(&path, currentFileItem);
+
+		// TODO: do a quick check this is a yamaha syx file - nice to leave in a slot where other SYX files can be detected as well
+		display->displayPopup("ITS SYX TIME!");
+
+
+		using deluge::gui::menu_item::dxCartridge;
+		if (!dxCartridge.tryLoad(path.get())) {
+			// display->displayPopup(path.get());
 			return;
+		}
+
+		// TODO: not if we currently is at a freshly loaded DX7 instrument, in case we can just modify it in place
+		ParamManagerForTimeline newParamManager;
+		SoundInstrument* newInstrument = (SoundInstrument *)StorageManager::createNewInstrument(OutputType::SYNTH, &newParamManager);
+		newInstrument->setupAsBlankSynth(&newParamManager, true);
+		// TODO: oldInstrumentShouldBeReplaced ??????
+		//  This is how we feed a ParamManager into the replaceInstrument() function
+		currentSong->backUpParamManager((ModControllableAudio*)newInstrument->toModControllable(), nullptr,
+		                                &newParamManager, true);
+		currentSong->replaceInstrument(instrumentToReplace, newInstrument);
+		currentInstrument = newInstrument;
+		instrumentToReplace = newInstrument;
+		actionLogger.deleteAllLogs(); // Can't undo past this!
+		display->removeWorkingAnimation();
+		close();
+
+		if (dxCartridge.pd->isCartridge()) {
+			// TODO: this is a refactor checkpoint - dxCartridge should become
+			// part of LoadInstrumentPresetUI instead of using soundEditor
+			// currently BACK button to leave a cartridge does not work!
+			soundEditor.setup(getCurrentInstrumentClip(), &dxCartridge, 0);
+			openUI(&soundEditor);
+		} else {
+			dxCartridge.pd->unpackProgram(newInstrument->sources[0].dxPatch->params, 0);
+			// currentFileItem->instrument = newInstrument;
+		}
+
+		return;
 
 	} else {
 
@@ -872,6 +924,7 @@ Error LoadInstrumentPresetUI::performLoad(bool doClone) {
 	}
 
 	if (isSYXFile(currentFileItem)) {
+		// TODO: if this is a single-patch .syx file, treat it as a synth patch already
 		return Error::NONE;
 	}
 
