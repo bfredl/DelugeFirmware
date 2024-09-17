@@ -47,6 +47,13 @@ using namespace deluge;
 namespace encoders = deluge::hid::encoders;
 using encoders::EncoderName;
 
+char const* allowedFileExtensionsXMLandSYX[] = {"XML", "Json", "syx", NULL};
+
+static bool isSYXFile(FileItem *item) {
+	size_t len = item->filename.getLength();
+	return(len >= 4 && strcasecmp(item->filename.get()+(len-4), ".syx") == 0);
+}
+
 LoadInstrumentPresetUI loadInstrumentPresetUI{};
 
 LoadInstrumentPresetUI::LoadInstrumentPresetUI() {
@@ -61,6 +68,7 @@ bool LoadInstrumentPresetUI::getGreyoutColsAndRows(uint32_t* cols, uint32_t* row
 	}
 	return true;
 }
+
 
 bool LoadInstrumentPresetUI::opened() {
 
@@ -130,12 +138,15 @@ Error LoadInstrumentPresetUI::setupForOutputType() {
 	indicator_leds::setLedState(IndicatorLED::MIDI, false);
 	indicator_leds::setLedState(IndicatorLED::CV, false);
 
+	allowedFileExtensions = allowedFileExtensionsXML;
+
 	if (loadingSynthToKitRow) {
 		indicator_leds::blinkLed(IndicatorLED::SYNTH);
 		indicator_leds::blinkLed(IndicatorLED::KIT);
 	}
 	else if (outputTypeToLoad == OutputType::SYNTH) {
 		indicator_leds::blinkLed(IndicatorLED::SYNTH);
+		allowedFileExtensions = allowedFileExtensionsXMLandSYX;
 	}
 	else if (outputTypeToLoad == OutputType::MIDI_OUT) {
 		indicator_leds::blinkLed(IndicatorLED::MIDI);
@@ -307,8 +318,11 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 			return;
 		}
 	}
+	else if (isSYXFile(currentFileItem)) {
+			display->displayPopup("ITS SYX TIME!");
+			return;
 
-	else {
+	} else {
 
 		if (currentInstrumentLoadError != Error::NONE) {
 			if (loadingSynthToKitRow) {
@@ -855,6 +869,10 @@ Error LoadInstrumentPresetUI::performLoad(bool doClone) {
 	}
 	if (currentFileItem->instrument == instrumentToReplace && !doClone) {
 		return Error::NONE; // Happens if navigate over a folder's name (Instrument stays the same),
+	}
+
+	if (isSYXFile(currentFileItem)) {
+		return Error::NONE;
 	}
 
 	// then back onto that neighbouring Instrument - you'd incorrectly get a "USED" error without this line.
