@@ -19,8 +19,8 @@
 #include "definitions_cxx.hpp"
 #include "extern.h"
 #include "gui/context_menu/load_instrument_preset.h"
-#include "gui/menu_item/dx/cartridge.h"
 #include "gui/ui/keyboard/keyboard_screen.h"
+#include "gui/ui/load/load_dx_cartridge.h"
 #include "gui/ui/root_ui.h"
 #include "gui/views/arranger_view.h"
 #include "gui/views/instrument_clip_view.h"
@@ -340,8 +340,7 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		display->displayPopup("ITS SYX TIME!");
 
 
-		using deluge::gui::menu_item::dxCartridge;
-		if (!dxCartridge.tryLoad(path.get())) {
+		if (!loadDxCartridgeUI.tryLoad(path.get())) {
 			// display->displayPopup(path.get());
 			return;
 		}
@@ -361,14 +360,11 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		display->removeWorkingAnimation();
 		close();
 
-		if (dxCartridge.pd->isCartridge()) {
-			// TODO: this is a refactor checkpoint - dxCartridge should become
-			// part of LoadInstrumentPresetUI instead of using soundEditor
-			// currently BACK button to leave a cartridge does not work!
-			soundEditor.setup(getCurrentInstrumentClip(), &dxCartridge, 0);
-			openUI(&soundEditor);
+		if (loadDxCartridgeUI.pd->isCartridge()) {
+			loadDxCartridgeUI.currentSound = newInstrument;
+			openUI(&loadDxCartridgeUI);
 		} else {
-			dxCartridge.pd->unpackProgram(newInstrument->sources[0].dxPatch->params, 0);
+			loadDxCartridgeUI.pd->unpackProgram(newInstrument->sources[0].dxPatch->params, 0);
 			// currentFileItem->instrument = newInstrument;
 		}
 
