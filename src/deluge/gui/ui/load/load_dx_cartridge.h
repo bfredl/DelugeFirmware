@@ -27,16 +27,18 @@ class Sound;
 class LoadDxCartridgeUI : public UI {
 	void renderOLED(deluge::hid::display::oled_canvas::Canvas& canvas) override;
 	void drawValue();
-	void readValue();
 
 	void selectEncoderAction(int8_t offset) override;
 	ActionResult buttonAction(deluge::hid::Button b, bool on, bool inCardRoutine) override;
 	UIType getUIType() override { return UIType::BROWSER; }
-;
+	void readValue();
+
 public:
+
 	LoadDxCartridgeUI() {};
 
 	bool tryLoad(const char* path);
+	void navigate(int8_t offset, bool wrapAround = true);
 	// this thing is big. allocate external mem on demand
 	DX7Cartridge* pd = nullptr;
 

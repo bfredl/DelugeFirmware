@@ -8,6 +8,7 @@
 #include "memory/general_memory_allocator.h"
 #include "model/song/song.h"
 #include "processing/sound/sound.h"
+#include "processing/sound/sound_instrument.h"
 #include "util/container/static_vector.hpp"
 
 using namespace deluge;
@@ -93,29 +94,12 @@ void LoadDxCartridgeUI::readValue() {
 		if (name[0] != 0) {
 			instrument->name.set(name);
 		}
+		((SoundInstrument *)instrument)->syxSlot = currentValue;
 	}
 }
 
 void LoadDxCartridgeUI::selectEncoderAction(int8_t offset) {
-	int32_t newValue = currentValue + offset;
-	int32_t numValues = pd->numPatches();
-
-	if (display->haveOLED()) {
-		if (newValue >= numValues || newValue < 0) {
-			return;
-		}
-	}
-	else {
-		if (newValue >= numValues) {
-			newValue %= numValues;
-		}
-		else if (newValue < 0) {
-			newValue = (newValue % numValues + numValues) % numValues;
-		}
-	}
-
-	currentValue = newValue;
-
+	navigate(offset, !display->haveOLED());
 	if (display->haveOLED()) {
 		if (currentValue < scrollPos) {
 			scrollPos = currentValue;
@@ -124,6 +108,28 @@ void LoadDxCartridgeUI::selectEncoderAction(int8_t offset) {
 			scrollPos++;
 		}
 	}
+
+}
+
+void LoadDxCartridgeUI::navigate(int8_t offset, bool wrapAround) {
+	int32_t newValue = currentValue + offset;
+	int32_t numValues = pd->numPatches();
+
+	if (wrapAround) {
+		if (newValue >= numValues) {
+			newValue %= numValues;
+		}
+		else if (newValue < 0) {
+			newValue = (newValue % numValues + numValues) % numValues;
+		}
+	}
+	else {
+		if (newValue >= numValues || newValue < 0) {
+			return;
+		}
+	}
+
+	currentValue = newValue;
 
 	readValue();
 }

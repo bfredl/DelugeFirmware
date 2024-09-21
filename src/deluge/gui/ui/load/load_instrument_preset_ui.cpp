@@ -348,6 +348,10 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		// TODO: not if we currently is at a freshly loaded DX7 instrument, in case we can just modify it in place
 		ParamManagerForTimeline newParamManager;
 		SoundInstrument* newInstrument = (SoundInstrument *)StorageManager::createNewInstrument(OutputType::SYNTH, &newParamManager);
+		// TODO: referencing in place fails
+		// newInstrument->dirPath.set(currentDir.get(), currentDir.getLength());
+		newInstrument->dirPath.set(&currentDir);
+		newInstrument->syxPath.set(&currentFileItem->filename);
 		newInstrument->setupAsBlankSynth(&newParamManager, true);
 		// TODO: oldInstrumentShouldBeReplaced ??????
 		//  This is how we feed a ParamManager into the replaceInstrument() function
@@ -358,7 +362,6 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		instrumentToReplace = newInstrument;
 		actionLogger.deleteAllLogs(); // Can't undo past this!
 		display->removeWorkingAnimation();
-		close();
 
 		if (loadDxCartridgeUI.pd->isCartridge()) {
 			loadDxCartridgeUI.currentSound = newInstrument;
@@ -366,6 +369,7 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		} else {
 			loadDxCartridgeUI.pd->unpackProgram(newInstrument->sources[0].dxPatch->params, 0);
 			// currentFileItem->instrument = newInstrument;
+			close();
 		}
 
 		return;
