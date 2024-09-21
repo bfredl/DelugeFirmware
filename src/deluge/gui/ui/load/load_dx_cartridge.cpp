@@ -3,8 +3,13 @@
 #include "dsp/dx/dx7note.h"
 #include "ff.h"
 #include "gui/l10n/l10n.h"
+#include "gui/ui/keyboard/keyboard_screen.h"
 #include "gui/ui/load/load_instrument_preset_ui.h"
+#include "gui/views/automation_view.h"
+#include "gui/views/instrument_clip_view.h"
 #include "hid/display/display.h"
+#include "hid/led/indicator_leds.h"
+#include "hid/led/pad_leds.h"
 #include "memory/general_memory_allocator.h"
 #include "model/song/song.h"
 #include "processing/sound/sound.h"
@@ -139,17 +144,91 @@ ActionResult LoadDxCartridgeUI::buttonAction(deluge::hid::Button b, bool on, boo
 	if (b == BACK) {
 		if (on && !currentUIMode) {
 			close();
+			// we cannot "stack" them as we like to see through KeyboardScreen
+			// in this UI
+			openUI(&loadInstrumentPresetUI);
 		}
 	} else if (b == LOAD || b == SELECT_ENC) {
 		if (on && !currentUIMode) {
 			close();
-			loadInstrumentPresetUI.close();
 		}
+	} else if (b == KEYBOARD && on) {
+		if (inCardRoutine) {
+			return ActionResult::REMIND_ME_OUTSIDE_CARD_ROUTINE;
+		}
+		// This is a duplicate of SoundEditor, refactor!
+		Clip* clip = getCurrentClip();
+
+		if (getRootUI() == &keyboardScreen) {
+			if (clip->onAutomationClipView) {
+				swapOutRootUILowLevel(&automationView);
+				automationView.openedInBackground();
+			}
+
+			else {
+				swapOutRootUILowLevel(&instrumentClipView);
+				instrumentClipView.openedInBackground();
+			}
+		}
+		else if (getRootUI() == &instrumentClipView) {
+			swapOutRootUILowLevel(&keyboardScreen);
+			keyboardScreen.openedInBackground();
+		}
+		else if (getRootUI() == &automationView) {
+			if (automationView.onMenuView) {
+				clip->onAutomationClipView = false;
+				automationView.onMenuView = false;
+				indicator_leds::setLedState(IndicatorLED::CLIP_VIEW, true);
+			}
+			automationView.resetInterpolationShortcutBlinking();
+			automationView.resetPadSelectionShortcutBlinking();
+			automationView.resetSelectedNoteRowBlinking();
+			swapOutRootUILowLevel(&keyboardScreen);
+			keyboardScreen.openedInBackground();
+		}
+
+		PadLEDs::reassessGreyout();
+
+		indicator_leds::setLedState(IndicatorLED::KEYBOARD, getRootUI() == &keyboardScreen);
 	}
 	return ActionResult::NOT_DEALT_WITH;
 }
 
+ActionResult LoadDxCartridgeUI::padAction(int32_t x, int32_t y, int32_t on) {
+	if (sdRoutineLock) {
+		return ActionResult::REMIND_ME_OUTSIDE_CARD_ROUTINE;
+	}
+
+	// TODO: very similar to soundEditor, share?
+	RootUI* rootUI = getRootUI();
+	if (rootUI == &keyboardScreen) {
+		keyboardScreen.padAction(x, y, on);
+		return ActionResult::DEALT_WITH;
+	}
+
+	// Audition pads
+	else if (rootUI == &instrumentClipView) {
+		if (x == kDisplayWidth + 1) {
+			instrumentClipView.padAction(x, y, on);
+			return ActionResult::DEALT_WITH;
+		}
+	}
+
+	else if (rootUI == &automationView) {
+		ActionResult result = automationView.padAction(x, y, on);
+		if (result == ActionResult::DEALT_WITH) {
+			return result;
+		}
+	}
+
+	return ActionResult::NOT_DEALT_WITH;
+}
+
 void LoadDxCartridgeUI::renderOLED(deluge::hid::display::oled_canvas::Canvas& canvas) {
+	if (!currentSound->syxPath.isEmpty()) {
+		canvas.drawScreenTitle(currentSound->syxPath.get());
+	}
+
 	if (pd == nullptr) {
 		return;
 	}

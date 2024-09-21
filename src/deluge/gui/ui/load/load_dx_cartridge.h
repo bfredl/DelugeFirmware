@@ -22,7 +22,7 @@
 #include "gui/ui/ui.h"
 #include "storage/DX7Cartridge.h"
 
-class Sound;
+class SoundInstrument;
 
 class LoadDxCartridgeUI : public UI {
 	void renderOLED(deluge::hid::display::oled_canvas::Canvas& canvas) override;
@@ -30,6 +30,7 @@ class LoadDxCartridgeUI : public UI {
 
 	void selectEncoderAction(int8_t offset) override;
 	ActionResult buttonAction(deluge::hid::Button b, bool on, bool inCardRoutine) override;
+	ActionResult padAction(int32_t x, int32_t y, int32_t on) override;
 	UIType getUIType() override { return UIType::BROWSER; }
 	void readValue();
 
@@ -45,7 +46,7 @@ public:
 	int32_t currentValue = 0;
 	int scrollPos = 0; // Each instance needs to store this separately
 
-	Sound *currentSound = nullptr;
+	SoundInstrument *currentSound = nullptr;
 };
 
 extern LoadDxCartridgeUI loadDxCartridgeUI;

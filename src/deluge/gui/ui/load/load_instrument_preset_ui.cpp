@@ -362,14 +362,16 @@ void LoadInstrumentPresetUI::enterKeyPress() {
 		instrumentToReplace = newInstrument;
 		actionLogger.deleteAllLogs(); // Can't undo past this!
 		display->removeWorkingAnimation();
+		close();
 
 		if (loadDxCartridgeUI.pd->isCartridge()) {
 			loadDxCartridgeUI.currentSound = newInstrument;
 			openUI(&loadDxCartridgeUI);
+			// associating the instrument with a file is tricky, we need to
+			// allocate an "unsaved slot" which can be navigated to..
 		} else {
 			loadDxCartridgeUI.pd->unpackProgram(newInstrument->sources[0].dxPatch->params, 0);
-			// currentFileItem->instrument = newInstrument;
-			close();
+			currentFileItem->instrument = newInstrument;
 		}
 
 		return;
