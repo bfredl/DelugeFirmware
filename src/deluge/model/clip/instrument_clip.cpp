@@ -4638,8 +4638,7 @@ doHomogenize:
 	}
 }
 
-bool InstrumentClip::stepRecordNoteOn(ModelStackWithNoteRow* modelStack, int32_t velocity,
-                                      int32_t xZoom) {
+bool InstrumentClip::stepRecordNoteOn(ModelStackWithNoteRow* modelStack, int32_t velocity, int32_t xZoom) {
 
 	NoteRow* noteRow = modelStack->getNoteRow();
 
@@ -4648,19 +4647,20 @@ bool InstrumentClip::stepRecordNoteOn(ModelStackWithNoteRow* modelStack, int32_t
 		display->displayPopup("oopsie");
 	}
 
-	int32_t probability = noteRow->getDefaultProbability(modelStack);
+	int32_t probability = noteRow->getDefaultProbability();
+	Iterance iterance = noteRow->getDefaultIterance();
+	int32_t fill = noteRow->getDefaultFill(modelStack);
 	// Don't supply Action, cos sin tan
-	return noteRow->attemptNoteAdd(stepRecordingPos, xZoom, velocity, probability, modelStack, nullptr);
+	return noteRow->attemptNoteAdd(stepRecordingPos, xZoom, velocity, probability, iterance, fill, modelStack, nullptr);
 }
 
-void InstrumentClip::stepRecordAdvance( int32_t xZoom) {
+void InstrumentClip::stepRecordAdvance(int32_t xZoom) {
 	stepRecordingPos += xZoom;
 	// TODO: expand instead?
 	if (stepRecordingPos >= getLoopLength()) {
 		stepRecordingPos = 0;
 	}
 }
-
 
 void InstrumentClip::recordNoteOff(ModelStackWithNoteRow* modelStack, int32_t velocity) {
 

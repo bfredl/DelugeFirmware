@@ -79,8 +79,12 @@ public:
 	int8_t rightColHeld = -1;
 
 protected:
+	int8_t sequencerRows = 1; // TODO: zero by default
+
 	// Subclasses can override this to allow or disallow certain ControlColumn types
 	virtual bool allowSidebarType(ColumnControlFunction sidebarType) { return true; };
+
+	void renderSequencerPads(RGB image[][kDisplayWidth + kSideBarWidth]);
 };
 
 }; // namespace deluge::gui::ui::keyboard::layout

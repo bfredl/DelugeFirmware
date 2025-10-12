@@ -359,4 +359,14 @@ void ColumnControlsKeyboard::renderColumnBeatRepeat(RGB image[][kDisplayWidth + 
 	}
 }
 
+void ColumnControlsKeyboard::renderSequencerPads(RGB image[][kDisplayWidth + kSideBarWidth]) {
+	if (sequencerRows == 0) {
+		return;
+	};
+
+	int y = 0;
+	for (int32_t x = 0; x < kDisplayWidth; x++) {
+		image[y][x] = {255, 0, 0};
+	}
+}
 } // namespace deluge::gui::ui::keyboard::layout

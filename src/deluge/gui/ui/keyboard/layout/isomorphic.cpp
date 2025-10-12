@@ -31,7 +31,7 @@ void KeyboardLayoutIsomorphic::evaluatePads(PressedPad presses[kMaxNumKeyboardPa
 
 	for (int32_t idxPress = 0; idxPress < kMaxNumKeyboardPadPresses; ++idxPress) {
 		auto pressed = presses[idxPress];
-		if (pressed.active && pressed.x < kDisplayWidth) {
+		if (pressed.active && pressed.x < kDisplayWidth && pressed.y >= sequencerRows) {
 			enableNote(noteFromCoords(pressed.x, pressed.y), velocity);
 		}
 	}
@@ -113,7 +113,8 @@ void KeyboardLayoutIsomorphic::renderPads(RGB image[][kDisplayWidth + kSideBarWi
 	}
 
 	// Iterate over grid image
-	for (int32_t y = 0; y < kDisplayHeight; ++y) {
+	renderSequencerPads(image);
+	for (int32_t y = sequencerRows; y < kDisplayHeight; ++y) {
 		int32_t noteCode = noteFromCoords(0, y);
 		int32_t normalizedPadOffset = noteCode - getState().isomorphic.scrollOffset;
 		int32_t noteWithinOctave = (uint16_t)((noteCode + kOctaveSize) - getRootNote()) % kOctaveSize;
