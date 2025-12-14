@@ -513,9 +513,40 @@ static void renderAlgorithm(uint8_t* params) {
 	}
 }
 
+bool DxParam::getParamGroup(int param, ParamGroup* group) {
+	int op = param / 21;
+	int idx = param % 21;
+
+	if (op >= 6) {
+		return false;
+	};
+	int base = op * 21;
+
+	if (idx >= 17 && idx < 21) {
+		*group = ParamGroup{
+		    .title = "",
+		    .paramTitles = {"track", "coarse", "fine", "detune"},
+		    .params = {base + 17, base + 18, base + 19, base + 20},
+		    .active = idx - 17,
+		};
+		return true;
+		// group->paramTitles = {"track", "coarse", "fine", "detune"};
+		// group->params = {base+17, base+18, base+19, base+20};
+	}
+
+	return false;
+}
+
 void DxParam::drawPixelsForOled() {
 	const int y0 = 20;
 	char buffer[12];
+
+	// TODO: cache
+	ParamGroup* group;
+	getParamGroup(param, group);
+	if (getParamGroup(param, group)) {
+		return;
+	}
 
 	if (param < 0 || param == 135 || param == 136) {
 		int val = getValue();
@@ -526,6 +557,7 @@ void DxParam::drawPixelsForOled() {
 
 	int op = param / 21;
 	int idx = param % 21;
+
 	if (param < (6 * 21 + 8) && idx < 8) {
 		renderEnvelope(patch->params, op, idx); // op== 6 for pitch envelope
 	}

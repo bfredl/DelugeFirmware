@@ -23,6 +23,13 @@ class DxPatch;
 
 namespace deluge::gui::menu_item {
 
+struct ParamGroup {
+	const char* title;
+	const char* paramTitles[4];
+	int params[4];
+	int active;
+};
+
 class DxParam final : public MenuItem {
 public:
 	using MenuItem::MenuItem;
@@ -51,6 +58,8 @@ public:
 	int upper_limit = 0;
 	int32_t displayValue = 0;
 	DxPatch* patch;
+
+	bool getParamGroup(int param, ParamGroup* group);
 
 	int flash_row = -1;
 	bool blink_next = false;
