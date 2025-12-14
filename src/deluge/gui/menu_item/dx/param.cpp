@@ -537,16 +537,19 @@ bool DxParam::getParamGroup(int param, ParamGroup* group) {
 	return false;
 }
 
-void DxParam::drawPixelsForOled() {
-	const int y0 = 20;
-	char buffer[12];
-
+void DxParam::renderOLED() {
 	// TODO: cache
 	ParamGroup* group;
 	getParamGroup(param, group);
-	if (getParamGroup(param, group)) {
+	if (!getParamGroup(param, group)) {
+		MenuItem::renderOLED();
 		return;
 	}
+}
+
+void DxParam::drawPixelsForOled() {
+	const int y0 = 20;
+	char buffer[12];
 
 	if (param < 0 || param == 135 || param == 136) {
 		int val = getValue();

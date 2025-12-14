@@ -36,6 +36,7 @@ public:
 	DxParam(l10n::String newName) : MenuItem(newName) {}
 	void beginSession(MenuItem* navigatedBackwardFrom) override;
 	void drawPixelsForOled() override;
+	void renderOLED() override;
 	void flashParamName();
 	void readValueAgain() final;
 	void selectEncoderAction(int32_t offset) final;
