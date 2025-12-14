@@ -524,8 +524,8 @@ bool DxParam::getParamGroup(int param, ParamGroup* group) {
 
 	if (idx >= 17 && idx < 21) {
 		*group = ParamGroup{
-		    .title = "",
-		    .paramTitles = {"track", "coarse", "fine", "detune"},
+		    .title = "tuning",
+		    .paramTitles = {"trck", "rati", "fine", "detu"},
 		    .params = {base + 17, base + 18, base + 19, base + 20},
 		    .active = idx - 17,
 		};
@@ -539,11 +539,45 @@ bool DxParam::getParamGroup(int param, ParamGroup* group) {
 
 void DxParam::renderOLED() {
 	// TODO: cache
-	ParamGroup* group;
-	getParamGroup(param, group);
-	if (!getParamGroup(param, group)) {
+	ParamGroup group;
+	if (!getParamGroup(param, &group)) {
 		MenuItem::renderOLED();
 		return;
+	}
+
+	// TODO: integrate
+	OLED::main.drawScreenTitle(getTitle(), false);
+
+	auto& image = OLED::main;
+
+	constexpr int32_t base_y = 14 + OLED_MAIN_TOPMOST_PIXEL;
+	constexpr int32_t column_width = OLED_MAIN_WIDTH_PIXELS / 4;
+	for (int idx = 0; idx < 4; idx++) {
+		const bool is_selected = idx == group.active;
+
+		const uint8_t box_width = column_width * 1;
+		uint8_t current_x = idx * box_width;
+		constexpr uint8_t box_height = 25;
+		constexpr uint8_t label_height = kTextSpacingY;
+		constexpr uint8_t label_y = base_y + box_height - label_height;
+		uint8_t content_height = box_height;
+		auto slotWidth = box_width;
+
+		const char* label = group.paramTitles[idx];
+
+		int32_t label_width;
+		while ((label_width = image.getStringWidthInPixels(label, kTextSpacingY)) + 4 >= slotWidth) {
+			label = "???";
+		}
+		const int32_t label_start_x = current_x + (box_width - label_width) / 2;
+		image.drawString(label, label_start_x, label_y, kTextSpacingX, kTextSpacingY);
+
+		if (is_selected) {
+			const bool highlight_whole_slot = false;
+			const int32_t start_y = highlight_whole_slot ? base_y - 1 : label_y;
+			const int32_t end_y = highlight_whole_slot ? base_y + box_height - 1 : label_y + label_height - 1;
+			image.invertAreaRounded(current_x + 1, box_width - 3, start_y, end_y);
+		}
 	}
 }
 
