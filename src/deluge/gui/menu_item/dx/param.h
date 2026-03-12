@@ -37,6 +37,7 @@ public:
 	void beginSession(MenuItem* navigatedBackwardFrom) override;
 	void drawPixelsForOled() override;
 	void renderOLED() override;
+	void renderParamInHorizontalMenu(int param, const SlotPosition& slot);
 	void flashParamName();
 	void readValueAgain() final;
 	void selectEncoderAction(int32_t offset) final;

@@ -83,6 +83,9 @@ void DxParam::readValueAgain() {
 		else if (idx == 14) {
 			upper_limit = 3;
 		}
+		else if (idx == 17) {
+			upper_limit = 1;
+		}
 		else if (idx == 20) {
 			upper_limit = 14;
 		}
@@ -572,6 +575,11 @@ void DxParam::renderOLED() {
 		const int32_t label_start_x = current_x + (box_width - label_width) / 2;
 		image.drawString(label, label_start_x, label_y, kTextSpacingX, kTextSpacingY);
 
+		renderParamInHorizontalMenu(group.params[idx], {.start_x = current_x,
+		                                                .start_y = base_y,
+		                                                .width = static_cast<uint8_t>(box_width - 1),
+		                                                .height = content_height});
+
 		if (is_selected) {
 			const bool highlight_whole_slot = false;
 			const int32_t start_y = highlight_whole_slot ? base_y - 1 : label_y;
@@ -579,6 +587,14 @@ void DxParam::renderOLED() {
 			image.invertAreaRounded(current_x + 1, box_width - 3, start_y, end_y);
 		}
 	}
+}
+
+void DxParam::renderParamInHorizontalMenu(int param, const SlotPosition& slot) {
+	int val = patch->params[param];
+	DEF_STACK_STRING_BUF(paramValue, 10);
+	paramValue.appendInt(val);
+	return OLED::main.drawStringCentered(paramValue, slot.start_x, slot.start_y + kHorizontalMenuSlotYOffset,
+	                                     kTextTitleSpacingX, kTextTitleSizeY, slot.width);
 }
 
 void DxParam::drawPixelsForOled() {
